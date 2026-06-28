@@ -1,0 +1,228 @@
+---
+import BaseHead from '../components/BaseHead.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
+---
+
+<!doctype html>
+<html lang="zh-TW">
+	<head>
+		<BaseHead title={`文獻導航 | ${SITE_TITLE}`} description="搜尋與整理學術文獻" />
+		<style>
+			main {
+				width: 100%;
+				max-width: 1000px;
+				margin: 0 auto;
+				padding: 40px 20px;
+			}
+			.page-title {
+				font-size: 3.5rem;
+				font-weight: 800;
+				margin-bottom: 10px;
+				letter-spacing: -0.02em;
+				color: #111;
+			}
+			.page-desc {
+				color: #666;
+				font-size: 1.1rem;
+				margin-bottom: 40px;
+				max-width: 600px;
+				line-height: 1.6;
+			}
+			/* 搜尋區塊 */
+			.search-box {
+				display: flex;
+				gap: 12px;
+				margin-bottom: 20px;
+			}
+			.search-input {
+				flex: 1;
+				padding: 16px 24px;
+				font-size: 1.1rem;
+				border: 1px solid #eaeaea;
+				border-radius: 30px;
+				background-color: #fcfcfc;
+				transition: all 0.2s ease;
+			}
+			.search-input:focus {
+				outline: none;
+				border-color: #111;
+				background-color: #fff;
+			}
+			.search-btn {
+				padding: 0 32px;
+				font-size: 1.1rem;
+				font-weight: 600;
+				color: #fff;
+				background-color: #111;
+				border: none;
+				border-radius: 30px;
+				cursor: pointer;
+				transition: transform 0.2s ease, background-color 0.2s ease;
+			}
+			.search-btn:hover {
+				background-color: #333;
+				transform: translateY(-2px);
+			}
+			/* 狀態提示 */
+			#statusMsg {
+				margin-bottom: 30px;
+				color: #666;
+				font-weight: 600;
+			}
+			/* 文獻結果卡片 */
+			.paper-list {
+				display: flex;
+				flex-direction: column;
+				gap: 20px;
+			}
+			.paper-card {
+				background: #fff;
+				border: 1px solid #eaeaea;
+				border-radius: 16px;
+				padding: 24px;
+				transition: transform 0.2s ease, box-shadow 0.2s ease;
+			}
+			.paper-card:hover {
+				transform: translateY(-3px);
+				box-shadow: 0 12px 32px rgba(0, 0, 0, 0.05);
+			}
+			.paper-title {
+				font-size: 1.3rem;
+				margin: 0 0 10px 0;
+				color: #111;
+				line-height: 1.4;
+			}
+			.paper-title a {
+				color: inherit;
+				text-decoration: none;
+			}
+			.paper-title a:hover {
+				text-decoration: underline;
+			}
+			.paper-meta {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 16px;
+				font-size: 0.9rem;
+				color: #666;
+				margin-bottom: 12px;
+			}
+			.meta-tag {
+				background: #f5f5f5;
+				padding: 4px 10px;
+				border-radius: 6px;
+				font-weight: 600;
+			}
+			.paper-abstract {
+				font-size: 0.95rem;
+				color: #555;
+				line-height: 1.6;
+				display: -webkit-box;
+				-webkit-line-clamp: 3;
+				-webkit-box-orient: vertical;
+				overflow: hidden;
+				margin: 0;
+			}
+			@media (max-width: 720px) {
+				.search-box { flex-direction: column; }
+				.search-btn { padding: 16px; }
+			}
+		</style>
+	</head>
+	<body>
+		<Header />
+		<main>
+			<h1 class="page-title">文獻導航系統</h1>
+			<p class="page-desc">輸入研究主題（建議使用英文），系統將透過 OpenAlex 資料庫搜尋文獻，並依照關聯性與引用數為您初步排序。</p>
+
+			<div class="search-box">
+				<input type="text" id="paperSearchInput" class="search-input" placeholder="例如: high entropy alloy, organic synthesis..." />
+				<button id="searchBtn" class="search-btn">搜尋論文</button>
+			</div>
+
+			<div id="statusMsg"></div>
+			<div id="paperResults" class="paper-list"></div>
+		</main>
+		<Footer />
+
+		<script>
+			document.addEventListener('DOMContentLoaded', () => {
+				const searchInput = document.getElementById('paperSearchInput');
+				const searchBtn = document.getElementById('searchBtn');
+				const statusMsg = document.getElementById('statusMsg');
+				const resultsContainer = document.getElementById('paperResults');
+
+				// 執行搜尋的函數
+				async function searchPapers() {
+					// @ts-ignore
+					const query = searchInput.value.trim();
+					if (!query) return;
+
+					// 顯示載入中狀態
+					if(statusMsg) statusMsg.textContent = '搜尋中，請稍候...';
+					if(resultsContainer) resultsContainer.innerHTML = '';
+
+					try {
+						// 呼叫 OpenAlex API (設定回傳前 10 筆，並以引用數及關聯性排序)
+						const url = `https://api.openalex.org/works?search=${encodeURIComponent(query)}&per-page=10&sort=relevance_score:desc,cited_by_count:desc`;
+						const response = await fetch(url);
+						const data = await response.json();
+
+						if (data.results && data.results.length > 0) {
+							if(statusMsg) statusMsg.textContent = `找到相關文獻，顯示前 ${data.results.length} 筆結果：`;
+							
+							// 將每一筆論文資料轉換為 HTML 卡片
+							data.results.forEach((paper: any) => {
+								const card = document.createElement('div');
+								card.className = 'paper-card';
+								
+								// 處理標題與連結
+								const title = paper.title || '無標題';
+								const link = paper.doi || paper.id || '#';
+								
+								// 處理年份與引用數
+								const year = paper.publication_year || '未知年份';
+								const citedBy = paper.cited_by_count || 0;
+								
+								// 處理作者群 (只取前3位)
+								let authors = '未知作者';
+								if (paper.authorships && paper.authorships.length > 0) {
+									authors = paper.authorships.slice(0, 3).map((a:any) => a.author.display_name).join(', ');
+									if (paper.authorships.length > 3) authors += ' 等人';
+								}
+
+								// 組合 HTML 結構
+								card.innerHTML = `
+									<h2 class="paper-title"><a href="${link}" target="_blank">${title}</a></h2>
+									<div class="paper-meta">
+										<span class="meta-tag">📅 ${year}</span>
+										<span class="meta-tag">📊 引用數: ${citedBy}</span>
+										<span>✍️ ${authors}</span>
+									</div>
+								`;
+								if(resultsContainer) resultsContainer.appendChild(card);
+							});
+						} else {
+							if(statusMsg) statusMsg.textContent = '找不到相關文獻，請嘗試更換關鍵字。';
+						}
+					} catch (error) {
+						console.error('搜尋發生錯誤:', error);
+						if(statusMsg) statusMsg.textContent = '連線至資料庫失敗，請稍後再試。';
+					}
+				}
+
+				// 綁定按鈕點擊事件
+				if(searchBtn) searchBtn.addEventListener('click', searchPapers);
+
+				// 綁定鍵盤 Enter 事件
+				if(searchInput) {
+					searchInput.addEventListener('keypress', (e) => {
+						if (e.key === 'Enter') searchPapers();
+					});
+				}
+			});
+		</script>
+	</body>
+</html>
