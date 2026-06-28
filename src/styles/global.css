@@ -1,157 +1,119 @@
 /*
-  The CSS in this style tag is based off of Bear Blog's default CSS.
-  https://github.com/HermanMartinus/bearblog/blob/297026a877bc2ab2b3bdfbd6b9f7961c350917dd/templates/styles/blog/default.css
-  License MIT: https://github.com/HermanMartinus/bearblog/blob/master/LICENSE.md
+  Customized Minimalist CSS for Kai's Digital Space
  */
 
 :root {
-	--accent: #2337ff;
-	--accent-dark: #000d8a;
-	--black: 15, 18, 25;
-	--gray: 96, 115, 159;
-	--gray-light: 229, 233, 240;
-	--gray-dark: 34, 41, 57;
-	--gray-gradient: rgba(var(--gray-light), 50%), #fff;
-	--box-shadow:
-		0 2px 6px rgba(var(--gray), 25%), 0 8px 24px rgba(var(--gray), 33%),
-		0 16px 32px rgba(var(--gray), 33%);
+  /* 將主色調改為極簡的深黑/深灰色系 */
+  --accent: #111111;
+  --accent-dark: #000000;
+  --black: 17, 17, 17;
+  --gray: 102, 102, 102;
+  --gray-light: 245, 245, 245; /* 更柔和乾淨的淺灰 */
+  --gray-dark: 51, 51, 51;
+  --gray-gradient: rgba(var(--gray-light), 50%), #fff;
+  /* 更現代、乾淨的彌散陰影 */
+  --box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04); 
 }
+
 /* 全域字體與背景 */
 body {
   background-color: #fcfcfc; /* 乾淨的米白色 */
-  color: #111; /* 深灰色字體，閱讀更舒適 */
-  font-family: system-ui, -apple-system, sans-serif; /* 使用乾淨的無襯線字體 */
+  color: #111; /* 深灰色字體，避免純黑刺眼 */
+  /* 加入針對繁體中文優化的字體堆疊 */
+  font-family: 'Helvetica Neue', Arial, 'PingFang TC', 'Heiti TC', 'Microsoft JhengHei', sans-serif; 
   margin: 0;
   padding: 0;
+  line-height: 1.6;
+  word-wrap: break-word;
 }
+
 /* 內容中央容器 */
 .container {
-  max-width: 1000px; /* 設定主要內容的最大寬度 */
-  margin: 0 auto; /* 中央對齊 */
+  max-width: 1000px;
+  margin: 0 auto;
   padding: 40px 20px;
 }
 
+/* 統一 main 標籤的寬度限制，避免跑版 */
 main {
-	width: 720px;
-	max-width: calc(100% - 2em);
-	margin: auto;
-	padding: 3em 1em;
+  width: 100%;
+  max-width: 1000px;
+  margin: auto;
+  padding: 2em 1em;
 }
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
-	margin: 0 0 0.5rem 0;
-	color: rgb(var(--black));
-	line-height: 1.2;
+
+/* ---------- 標題與排版系統 ---------- */
+h1, h2, h3, h4, h5, h6 {
+  color: rgb(var(--black));
+  line-height: 1.2;
+  font-weight: 700;
+  margin: 1.5em 0 0.5em 0; /* 增加標題上方的留白，提升層次感 */
 }
-/* 每一頁的超大醒目標題 (對應圖 7、8) */
+
 h1 {
-  font-size: 3.5rem; /* 非常大 */
-  font-weight: 800; /* 極粗 */
+  font-size: 3.5rem;
+  font-weight: 800;
   margin-top: 0;
   margin-bottom: 20px;
   line-height: 1.1;
-}
-h2 {
-	font-size: 2.441em;
-}
-h3 {
-	font-size: 1.953em;
-}
-h4 {
-	font-size: 1.563em;
-}
-h5 {
-	font-size: 1.25em;
+  letter-spacing: -0.02em; /* 字元微縮，更具設計感 */
 }
 
-/* 卡片容器的樣式 (對應圖 5、6) */
+h2 { font-size: 2.2em; letter-spacing: -0.01em; }
+h3 { font-size: 1.7em; }
+h4 { font-size: 1.3em; }
+h5 { font-size: 1.1em; }
+
+/* ---------- UI 元件 ---------- */
+/* 卡片樣式 (對應首頁的特徵區塊) */
 .card {
   background: white;
-  border-radius: 12px; /* 圓角 */
-  padding: 20px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05); /* 微妙的陰影 */
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: var(--box-shadow);
   margin-bottom: 20px;
-}
-strong,
-b {
-	font-weight: 700;
-}
-a {
-	color: var(--accent);
-}
-a:hover {
-	color: var(--accent);
-}
-p {
-	margin-bottom: 1em;
-}
-.prose p {
-	margin-bottom: 2em;
-}
-textarea {
-	width: 100%;
-	font-size: 16px;
-}
-input {
-	font-size: 16px;
-}
-table {
-	width: 100%;
-}
-img {
-	max-width: 100%;
-	height: auto;
-	border-radius: 8px;
-}
-code {
-	padding: 2px 5px;
-	background-color: rgb(var(--gray-light));
-	border-radius: 2px;
-}
-pre {
-	padding: 1.5em;
-	border-radius: 8px;
-}
-pre > code {
-	all: unset;
-}
-blockquote {
-	border-left: 4px solid var(--accent);
-	padding: 0 0 0 20px;
-	margin: 0;
-	font-size: 1.333em;
-}
-hr {
-	border: none;
-	border-top: 1px solid rgb(var(--gray-light));
-}
-@media (max-width: 720px) {
-	body {
-		font-size: 18px;
-	}
-	main {
-		padding: 1em;
-	}
+  border: 1px solid #f5f5f5; /* 極淡的邊框 */
+  transition: transform 0.2s ease, box-shadow 0.2s ease; /* 平滑過渡動畫 */
 }
 
-.sr-only {
-	border: 0;
-	padding: 0;
-	margin: 0;
-	position: absolute !important;
-	height: 1px;
-	width: 1px;
-	overflow: hidden;
-	/* IE6, IE7 - a 0 height clip, off to the bottom right of the visible 1px box */
-	clip: rect(1px 1px 1px 1px);
-	/* maybe deprecated but we need to support legacy browsers */
-	clip: rect(1px, 1px, 1px, 1px);
-	/* modern browsers, clip-path works inwards from each corner */
-	clip-path: inset(50%);
-	/* added line to stop words getting smushed together (as they go onto separate lines and some screen readers do not understand line feeds as a space */
-	white-space: nowrap;
+.card:hover {
+  transform: translateY(-3px); /* 滑鼠游標移入時微幅上浮 */
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.08);
+}
+
+/* ---------- 文章內容樣式 ---------- */
+strong, b { font-weight: 700; }
+
+a {
+  color: var(--accent);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  transition: color 0.2s ease;
+}
+
+a:hover {
+  color: var(--gray);
+}
+
+p { margin-bottom: 1.2em; }
+.prose p { margin-bottom: 1.8em; } /* Markdown 內文的段落間距稍微加大，方便閱讀 */
+
+/* 表單與表格 */
+textarea, input { font-size: 16px; font-family: inherit; }
+table { width: 100%; border-collapse: collapse; margin-bottom: 2em; }
+th, td { border-bottom: 1px solid rgb(var(--gray-light)); padding: 12px 8px; text-align: left; }
+
+/* 圖片與程式碼 */
+img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 12px;
+}
+
+code {
+  padding: 3px 6px;
+  background-color: rgb(var(--gray-light));
+  border-radius: 4px;
+  font-size: 0.9em;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
