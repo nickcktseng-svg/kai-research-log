@@ -13,75 +13,107 @@ const posts = (await getCollection('blog')).sort(
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang="zh-TW">
 	<head>
-		<BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} />
+		<BaseHead title={`學習日誌 | ${SITE_TITLE}`} description={SITE_DESCRIPTION} />
 		<style>
 			main {
-				width: 960px;
+				width: 100%;
+				max-width: 1000px;
+				margin: 0 auto;
+				padding: 40px 20px;
 			}
+			.page-title {
+				font-size: 3.5rem;
+				font-weight: 800;
+				margin-bottom: 10px;
+				letter-spacing: -0.02em;
+				color: #111;
+			}
+			.page-desc {
+				color: #666;
+				font-size: 1.1rem;
+				margin-bottom: 40px;
+			}
+			/* 搜尋框設計 */
+			.search-container {
+				margin-bottom: 40px;
+			}
+			.search-input {
+				width: 100%;
+				max-width: 600px;
+				padding: 16px 24px;
+				font-size: 1.1rem;
+				border: 1px solid #eaeaea;
+				border-radius: 30px;
+				background-color: #fcfcfc;
+				transition: all 0.2s ease;
+				box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+			}
+			.search-input:focus {
+				outline: none;
+				border-color: #111;
+				box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+				background-color: #fff;
+			}
+			/* 文章列表卡片設計 */
 			ul {
-				display: flex;
-				flex-wrap: wrap;
-				gap: 2rem;
+				display: grid;
+				grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+				gap: 32px;
 				list-style-type: none;
 				margin: 0;
 				padding: 0;
 			}
 			ul li {
-				width: calc(50% - 1rem);
+				transition: transform 0.2s ease;
+				width: 100%; /* 覆寫原本的寬度設定，讓網格系統接管 */
+			}
+			ul li:hover {
+				transform: translateY(-4px);
 			}
 			ul li * {
 				text-decoration: none;
-				transition: 0.2s ease;
-			}
-			ul li:first-child {
-				width: 100%;
-				margin-bottom: 1rem;
-				text-align: center;
-			}
-			ul li:first-child img {
-				width: 100%;
-			}
-			ul li:first-child .title {
-				font-size: 2.369rem;
 			}
 			ul li img {
-				margin-bottom: 0.5rem;
+				margin-bottom: 16px;
 				border-radius: 12px;
-			}
-			ul li a {
-				display: block;
+				width: 100%;
+				aspect-ratio: 16 / 9;
+				object-fit: cover;
+				box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 			}
 			.title {
 				margin: 0;
-				color: rgb(var(--black));
-				line-height: 1;
+				color: #111;
+				line-height: 1.4;
+				font-size: 1.4rem;
+				font-weight: 700;
+				transition: color 0.2s ease;
 			}
 			.date {
-				margin: 0;
-				color: rgb(var(--gray));
+				margin: 8px 0 0 0;
+				color: #888;
+				font-size: 0.95rem;
 			}
-			ul li a:hover h4,
-			ul li a:hover .date {
-				color: rgb(var(--accent));
+			ul li a:hover .title {
+				color: #666;
 			}
-			ul a:hover img {
-				box-shadow: var(--box-shadow);
+			/* 當找不到文章時的提示 */
+			.no-results {
+				display: none;
+				text-align: center;
+				padding: 40px;
+				color: #666;
+				font-size: 1.2rem;
+				grid-column: 1 / -1;
 			}
 			@media (max-width: 720px) {
+				.page-title {
+					font-size: 2.5rem;
+				}
 				ul {
-					gap: 0.5em;
-				}
-				ul li {
-					width: 100%;
-					text-align: center;
-				}
-				ul li:first-child {
-					margin-bottom: 0;
-				}
-				ul li:first-child .title {
-					font-size: 1.563em;
+					grid-template-columns: 1fr;
 				}
 			}
 		</style>
@@ -90,10 +122,25 @@ const posts = (await getCollection('blog')).sort(
 		<Header />
 		<main>
 			<section>
-				<ul>
+				<h1 class="page-title">學習日誌</h1>
+				<p class="page-desc">記錄每一次的學習進度、實作過程與反思。</p>
+
+				<!-- 搜尋輸入框 -->
+				<div class="search-container">
+					<input 
+						type="text" 
+						id="searchInput" 
+						class="search-input" 
+						placeholder="搜尋關鍵字 (例如: 錯合物滴定、備課紀錄) 或 日期 (例如: 2026-04)..." 
+					/>
+				</div>
+
+				<ul id="postList">
+					<div id="noResults" class="no-results">找不到符合的文章，請嘗試其他關鍵字。</div>
 					{
 						posts.map((post) => (
-							<li>
+							/* 在 li 標籤上加入 data-title 和 data-date，方便 JavaScript 抓取比對 */
+							<li class="post-item" data-title={post.data.title.toLowerCase()} data-date={post.data.pubDate.toISOString()}>
 								<a href={`/blog/${post.id}/`}>
 									{post.data.heroImage && (
 										<Image width={720} height={360} src={post.data.heroImage} alt="" />
@@ -110,5 +157,47 @@ const posts = (await getCollection('blog')).sort(
 			</section>
 		</main>
 		<Footer />
+
+		<!-- 搜尋功能的 JavaScript 邏輯 -->
+		<script>
+			document.addEventListener('DOMContentLoaded', () => {
+				const searchInput = document.getElementById('searchInput');
+				const postItems = document.querySelectorAll('.post-item');
+				const noResults = document.getElementById('noResults');
+
+				if(searchInput) {
+					searchInput.addEventListener('input', (e) => {
+						// 取得使用者輸入的文字，並轉成小寫
+						// @ts-ignore
+						const searchTerm = e.target.value.toLowerCase().trim();
+						let visibleCount = 0;
+
+						postItems.forEach((item) => {
+							const title = item.getAttribute('data-title') || '';
+							const date = item.getAttribute('data-date') || '';
+							
+							// 同時比對文章標題與日期
+							if (title.includes(searchTerm) || date.includes(searchTerm)) {
+								// @ts-ignore
+								item.style.display = 'block';
+								visibleCount++;
+							} else {
+								// @ts-ignore
+								item.style.display = 'none';
+							}
+						});
+
+						// 如果沒有任何文章符合，顯示提示文字
+						if(noResults) {
+							if (visibleCount === 0) {
+								noResults.style.display = 'block';
+							} else {
+								noResults.style.display = 'none';
+							}
+						}
+					});
+				}
+			});
+		</script>
 	</body>
 </html>
