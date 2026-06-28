@@ -6,43 +6,95 @@ import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang="zh-TW">
 	<head>
 		<BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} />
+		<style>
+			main {
+				width: 100%;
+				max-width: 1000px;
+				margin: 0 auto;
+				padding: 40px 20px;
+				font-family: system-ui, -apple-system, sans-serif;
+			}
+			.hero {
+				padding: 80px 0 60px 0;
+			}
+			.hero h1 {
+				font-size: 5rem; /* 呼應截圖中的超大標題 */
+				font-weight: 800;
+				line-height: 1.05;
+				margin-bottom: 0.3em;
+				letter-spacing: -0.03em;
+				color: #111;
+			}
+			.hero h1 span {
+				display: block;
+				font-size: 4rem;
+				color: #666; /* 英文名字用稍淺的顏色做出層次 */
+				margin-top: 5px;
+			}
+			.intro-text {
+				font-size: 1.2rem;
+				color: #555;
+				line-height: 1.8;
+				max-width: 700px;
+				margin-top: 30px;
+			}
+			.feature-cards {
+				display: grid;
+				grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+				gap: 24px;
+				margin-top: 60px;
+				margin-bottom: 40px;
+			}
+			.card {
+				background: #ffffff;
+				border-radius: 16px; /* 圓角卡片 */
+				padding: 32px;
+				box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04); /* 乾淨微弱的陰影 */
+				border: 1px solid #f5f5f5;
+			}
+			.card h3 {
+				margin-top: 0;
+				font-size: 1.4rem;
+				color: #111;
+				margin-bottom: 16px;
+				font-weight: 700;
+			}
+			.card p {
+				color: #666;
+				line-height: 1.6;
+				margin-bottom: 0;
+				font-size: 0.95rem;
+			}
+		</style>
 	</head>
 	<body>
 		<Header />
 		<main>
-			<h1>🧑‍🚀 Hello, Astronaut!</h1>
-			<p>
-				Welcome to the official <a href="https://astro.build/">Astro</a> blog starter template. This template
-				serves as a lightweight, minimally-styled starting point for anyone looking to build a personal
-				website, blog, or portfolio with Astro.
-			</p>
-			<p>
-				This template comes with a few integrations already configured in your
-				<code>astro.config.mjs</code> file. You can customize your setup with
-				<a href="https://astro.build/integrations">Astro Integrations</a> to add tools like Tailwind,
-				React, or Vue to your project.
-			</p>
-			<p>Here are a few ideas on how to get started with the template:</p>
-			<ul>
-				<li>Edit this page in <code>src/pages/index.astro</code></li>
-				<li>Edit the site header items in <code>src/components/Header.astro</code></li>
-				<li>Add your name to the footer in <code>src/components/Footer.astro</code></li>
-				<li>Check out the included blog posts in <code>src/content/blog/</code></li>
-				<li>Customize the blog post page layout in <code>src/layouts/BlogPost.astro</code></li>
-			</ul>
-			<p>
-				Have fun! If you get stuck, remember to
-				<a href="https://docs.astro.build/">read the docs</a>
-				or <a href="https://astro.build/chat">join us on Discord</a> to ask questions.
-			</p>
-			<p>
-				Looking for a blog template with a bit more personality? Check out
-				<a href="https://github.com/Charca/astro-blog-template">astro-blog-template</a>
-				by <a href="https://twitter.com/Charca">Maxi Ferreira</a>.
-			</p>
+			<section class="hero">
+				<h1>曾智凱 <span>Kai</span></h1>
+				<p class="intro-text">
+					這是一個用來記錄自主學習、實驗室研究歷程與專題進度的數位空間。主要作為化學領域的文獻統整、日常家教備課紀錄，以及個人跨域學習的存放處。<br/><br/>
+					目前網站仍在建置中，第一版以學習紀錄與作品集架構為主，未來將逐步加入文獻搜尋與分析小工具。
+				</p>
+			</section>
+
+			<section class="feature-cards">
+				<div class="card">
+					<h3>📝 學習日誌</h3>
+					<p>記錄每一次的實驗進度、實作過程與反思。把零散筆記分類，慢慢變成自己的第二大腦。</p>
+				</div>
+				<div class="card">
+					<h3>🔍 文獻導航</h3>
+					<p>即將上線：針對特定主題建立的文獻搜尋與本地端分析系統，協助快速梳理論文重點。</p>
+				</div>
+				<div class="card">
+					<h3>💡 跨域探索</h3>
+					<p>除了本科的專業研究，也同步紀錄語言學習、社群經營與翻譯等多元嘗試與靈感。</p>
+				</div>
+			</section>
 		</main>
 		<Footer />
 	</body>
