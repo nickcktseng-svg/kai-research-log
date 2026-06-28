@@ -2,7 +2,7 @@
 import BaseHead from '../components/BaseHead.astro';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
-import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
+import { SITE_TITLE } from '../consts';
 ---
 
 <!doctype html>
@@ -30,14 +30,16 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
 				max-width: 600px;
 				line-height: 1.6;
 			}
-			/* 搜尋區塊 */
+			/* 搜尋區塊 (加入排序選單) */
 			.search-box {
 				display: flex;
 				gap: 12px;
 				margin-bottom: 20px;
+				flex-wrap: wrap;
 			}
 			.search-input {
 				flex: 1;
+				min-width: 250px;
 				padding: 16px 24px;
 				font-size: 1.1rem;
 				border: 1px solid #eaeaea;
@@ -49,6 +51,16 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
 				outline: none;
 				border-color: #111;
 				background-color: #fff;
+			}
+			.sort-select {
+				padding: 0 20px;
+				font-size: 1rem;
+				border: 1px solid #eaeaea;
+				border-radius: 30px;
+				background-color: #fcfcfc;
+				color: #111;
+				cursor: pointer;
+				outline: none;
 			}
 			.search-btn {
 				padding: 0 32px;
@@ -71,63 +83,157 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
 				color: #666;
 				font-weight: 600;
 			}
-			/* 文獻結果卡片 */
+			
+			/* ---------- 進階文獻結果卡片視覺 ---------- */
 			.paper-list {
 				display: flex;
 				flex-direction: column;
-				gap: 20px;
+				gap: 24px;
 			}
 			.paper-card {
-				background: #fff;
+				background: #fdfdfd;
 				border: 1px solid #eaeaea;
-				border-radius: 16px;
-				padding: 24px;
+				border-radius: 20px;
+				padding: 32px;
+				position: relative;
 				transition: transform 0.2s ease, box-shadow 0.2s ease;
 			}
 			.paper-card:hover {
 				transform: translateY(-3px);
-				box-shadow: 0 12px 32px rgba(0, 0, 0, 0.05);
+				box-shadow: 0 12px 32px rgba(0, 0, 0, 0.06);
+			}
+			
+			/* 卡片頭部：包含標題與分數徽章 */
+			.card-header {
+				display: flex;
+				justify-content: space-between;
+				align-items: flex-start;
+				gap: 20px;
+				margin-bottom: 20px;
+			}
+			.card-meta-top {
+				flex: 1;
+			}
+			.stars {
+				display: block;
+				font-size: 0.9rem;
+				font-weight: 700;
+				color: #555;
+				margin-bottom: 8px;
 			}
 			.paper-title {
-				font-size: 1.3rem;
-				margin: 0 0 10px 0;
+				font-size: 1.5rem;
+				margin: 0 0 12px 0;
 				color: #111;
-				line-height: 1.4;
+				line-height: 1.3;
+				font-weight: 800;
 			}
-			.paper-title a {
-				color: inherit;
-				text-decoration: none;
-			}
-			.paper-title a:hover {
-				text-decoration: underline;
-			}
-			.paper-meta {
-				display: flex;
-				flex-wrap: wrap;
-				gap: 16px;
-				font-size: 0.9rem;
-				color: #666;
-				margin-bottom: 12px;
-			}
-			.meta-tag {
-				background: #f5f5f5;
-				padding: 4px 10px;
-				border-radius: 6px;
-				font-weight: 600;
-			}
-			.paper-abstract {
+			.paper-subtitle {
 				font-size: 0.95rem;
 				color: #555;
+				margin: 0;
 				line-height: 1.6;
+			}
+			
+			/* 右上角分數徽章 */
+			.score-badge {
+				background: #111;
+				color: #fff;
+				border-radius: 16px;
+				padding: 12px 16px;
+				text-align: center;
+				min-width: 70px;
+			}
+			.score-number {
+				display: block;
+				font-size: 1.6rem;
+				font-weight: 800;
+				line-height: 1;
+				margin-bottom: 4px;
+			}
+			.score-label {
+				display: block;
+				font-size: 0.75rem;
+				opacity: 0.8;
+			}
+			
+			/* 摘要與標籤 */
+			.paper-abstract {
+				font-size: 1rem;
+				color: #444;
+				line-height: 1.7;
+				margin-bottom: 20px;
 				display: -webkit-box;
-				-webkit-line-clamp: 3;
+				-webkit-line-clamp: 3; /* 只顯示三行 */
 				-webkit-box-orient: vertical;
 				overflow: hidden;
-				margin: 0;
 			}
+			.tags-container {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 10px;
+				margin-bottom: 24px;
+			}
+			.tag {
+				border: 1px solid #ddd;
+				padding: 4px 12px;
+				border-radius: 20px;
+				font-size: 0.85rem;
+				color: #555;
+			}
+			
+			/* 推薦原因區塊 */
+			.recommend-box {
+				margin-bottom: 24px;
+			}
+			.recommend-box h4 {
+				margin: 0 0 10px 0;
+				font-size: 1rem;
+				color: #111;
+				font-weight: 700;
+			}
+			.recommend-box ul {
+				margin: 0;
+				padding-left: 20px;
+				color: #555;
+				font-size: 0.95rem;
+				line-height: 1.6;
+			}
+			
+			/* 底部操作按鈕 */
+			.action-btns {
+				display: flex;
+				gap: 12px;
+			}
+			.btn-analyze {
+				background: #111;
+				color: #fff;
+				border: none;
+				padding: 10px 24px;
+				border-radius: 20px;
+				font-weight: 600;
+				cursor: pointer;
+				text-decoration: none;
+			}
+			.btn-analyze:hover { background: #333; }
+			
+			.btn-open {
+				background: #f5f5f5;
+				color: #111;
+				border: 1px solid #ddd;
+				padding: 10px 24px;
+				border-radius: 20px;
+				font-weight: 600;
+				cursor: pointer;
+				text-decoration: none;
+			}
+			.btn-open:hover { background: #eaeaea; }
+
 			@media (max-width: 720px) {
 				.search-box { flex-direction: column; }
-				.search-btn { padding: 16px; }
+				.search-btn, .sort-select { padding: 16px; }
+				.card-header { flex-direction: column-reverse; }
+				.score-badge { align-self: flex-start; }
 			}
 		</style>
 	</head>
@@ -135,10 +241,17 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
 		<Header />
 		<main>
 			<h1 class="page-title">文獻導航系統</h1>
-			<p class="page-desc">輸入研究主題（建議使用英文），系統將透過 OpenAlex 資料庫搜尋文獻，並依照關聯性與引用數為您初步排序。</p>
+			<p class="page-desc">輸入研究主題（建議使用英文），系統將透過 OpenAlex 資料庫搜尋文獻，並依照指定的條件進行排序與分析。</p>
 
 			<div class="search-box">
-				<input type="text" id="paperSearchInput" class="search-input" placeholder="例如: high entropy alloy, organic synthesis..." />
+				<input type="text" id="paperSearchInput" class="search-input" placeholder="例如: organic synthesis, complexometric titration..." />
+				
+				<select id="sortSelect" class="sort-select">
+					<option value="relevance_score:desc">依照關聯度排序</option>
+					<option value="cited_by_count:desc">依照引用次數排序</option>
+					<option value="publication_year:desc">依照年份排序 (新至舊)</option>
+				</select>
+
 				<button id="searchBtn" class="search-btn">搜尋論文</button>
 			</div>
 
@@ -150,56 +263,112 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
 		<script>
 			document.addEventListener('DOMContentLoaded', () => {
 				const searchInput = document.getElementById('paperSearchInput');
+				const sortSelect = document.getElementById('sortSelect');
 				const searchBtn = document.getElementById('searchBtn');
 				const statusMsg = document.getElementById('statusMsg');
 				const resultsContainer = document.getElementById('paperResults');
 
-				// 執行搜尋的函數
+				// 還原 OpenAlex 打散的摘要陣列
+				function reconstructAbstract(invertedIndex) {
+					if (!invertedIndex) return '此篇文獻未提供摘要資料...';
+					const words = [];
+					for (const [word, positions] of Object.entries(invertedIndex)) {
+						// @ts-ignore
+						positions.forEach(pos => { words[pos] = word; });
+					}
+					return words.join(' ') + '...';
+				}
+
+				// 動態產生推薦原因
+				function generateRecommendations(paper, index) {
+					let reasons = [];
+					if (index < 3 && sortSelect.value.includes('relevance')) reasons.push('主題高度相關');
+					if (paper.publication_year <= 2018) reasons.push('較早期文獻，可作背景補充');
+					if (paper.publication_year >= 2024) reasons.push('最新發表研究，掌握前沿動態');
+					if (paper.cited_by_count > 500) reasons.push('高引用文獻，可能是領域代表作');
+					if (reasons.length === 0) reasons.push('符合當前搜尋條件之參考文獻');
+					
+					return reasons.map(r => `<li>${r}</li>`).join('');
+				}
+
+				// 產生視覺化分數 (將關聯度或引用數轉換為 0-100 的分數)
+				function calculateDisplayScore(paper, index) {
+					// 這是一個視覺化的分數換算，讓結果看起來更直覺
+					let baseScore = 95 - (index * 2); 
+					if (paper.cited_by_count > 1000) baseScore += 5;
+					return Math.min(100, Math.max(60, Math.round(baseScore)));
+				}
+
 				async function searchPapers() {
 					// @ts-ignore
 					const query = searchInput.value.trim();
+					// @ts-ignore
+					const sortBy = sortSelect.value;
 					if (!query) return;
 
-					// 顯示載入中狀態
 					if(statusMsg) statusMsg.textContent = '搜尋中，請稍候...';
 					if(resultsContainer) resultsContainer.innerHTML = '';
 
 					try {
-						// 呼叫 OpenAlex API (設定回傳前 10 筆，並以引用數及關聯性排序)
-						const url = `https://api.openalex.org/works?search=${encodeURIComponent(query)}&per-page=10&sort=relevance_score:desc,cited_by_count:desc`;
+						// 套用關鍵字與排序條件
+						const url = `https://api.openalex.org/works?search=${encodeURIComponent(query)}&per-page=10&sort=${sortBy}`;
 						const response = await fetch(url);
 						const data = await response.json();
 
 						if (data.results && data.results.length > 0) {
 							if(statusMsg) statusMsg.textContent = `找到相關文獻，顯示前 ${data.results.length} 筆結果：`;
 							
-							// 將每一筆論文資料轉換為 HTML 卡片
-							data.results.forEach((paper: any) => {
+							data.results.forEach((paper: any, index: number) => {
 								const card = document.createElement('div');
 								card.className = 'paper-card';
 								
-								// 處理標題與連結
 								const title = paper.title || '無標題';
 								const link = paper.doi || paper.id || '#';
-								
-								// 處理年份與引用數
 								const year = paper.publication_year || '未知年份';
 								const citedBy = paper.cited_by_count || 0;
+								const journal = paper.primary_location?.source?.display_name || 'Unknown Journal';
 								
-								// 處理作者群 (只取前3位)
+								// 處理作者群
 								let authors = '未知作者';
 								if (paper.authorships && paper.authorships.length > 0) {
 									authors = paper.authorships.slice(0, 3).map((a:any) => a.author.display_name).join(', ');
 									if (paper.authorships.length > 3) authors += ' 等人';
 								}
 
-								// 組合 HTML 結構
+								// 處理大綱與標籤
+								const abstractText = reconstructAbstract(paper.abstract_inverted_index);
+								const concepts = (paper.concepts || []).slice(0, 4).map((c:any) => `<span class="tag">${c.display_name}</span>`).join('');
+								
+								// 處理推薦原因與分數
+								const recommendations = generateRecommendations(paper, index);
+								const displayScore = calculateDisplayScore(paper, index);
+								const starDisplay = index < 3 ? '★★★★★ 優先閱讀' : '★★★★☆ 推薦參考';
+
+								// 組合最終的 HTML 卡片
 								card.innerHTML = `
-									<h2 class="paper-title"><a href="${link}" target="_blank">${title}</a></h2>
-									<div class="paper-meta">
-										<span class="meta-tag">📅 ${year}</span>
-										<span class="meta-tag">📊 引用數: ${citedBy}</span>
-										<span>✍️ ${authors}</span>
+									<div class="card-header">
+										<div class="card-meta-top">
+											<span class="stars">${starDisplay}</span>
+											<h2 class="paper-title">${title}</h2>
+											<p class="paper-subtitle">${year} · ${journal} · Citations: ${citedBy} <br><br> ${authors}</p>
+										</div>
+										<div class="score-badge">
+											<span class="score-number">${displayScore}</span>
+											<span class="score-label">Score</span>
+										</div>
+									</div>
+									
+									<p class="paper-abstract">${abstractText}</p>
+									<div class="tags-container">${concepts}</div>
+									
+									<div class="recommend-box">
+										<h4>推薦原因</h4>
+										<ul>${recommendations}</ul>
+									</div>
+
+									<div class="action-btns">
+										<a href="#" class="btn-analyze" onclick="alert('本地端 AI 分析功能 (Step 4) 即將上線！')">Analyze</a>
+										<a href="${link}" target="_blank" class="btn-open">Open</a>
 									</div>
 								`;
 								if(resultsContainer) resultsContainer.appendChild(card);
@@ -213,15 +382,13 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
 					}
 				}
 
-				// 綁定按鈕點擊事件
 				if(searchBtn) searchBtn.addEventListener('click', searchPapers);
-
-				// 綁定鍵盤 Enter 事件
-				if(searchInput) {
-					searchInput.addEventListener('keypress', (e) => {
-						if (e.key === 'Enter') searchPapers();
-					});
-				}
+				if(searchInput) searchInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') searchPapers(); });
+				// 當下拉選單改變時，自動重新搜尋
+				if(sortSelect) sortSelect.addEventListener('change', () => {
+					// @ts-ignore
+					if(searchInput.value.trim() !== '') searchPapers();
+				});
 			});
 		</script>
 	</body>
