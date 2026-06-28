@@ -41,6 +41,31 @@ import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
 				max-width: 700px;
 				margin-top: 30px;
 			}
+			/* 快速連結按鈕區塊 */
+			.quick-links {
+				display: flex;
+				gap: 16px;
+				margin-top: 32px;
+				flex-wrap: wrap;
+			}
+			.link-btn {
+				display: inline-flex;
+				align-items: center;
+				padding: 10px 20px;
+				background-color: #f5f5f5;
+				color: #111;
+				text-decoration: none;
+				border-radius: 30px;
+				font-size: 0.95rem;
+				font-weight: 600;
+				border: 1px solid #eaeaea;
+				transition: all 0.2s ease;
+			}
+			.link-btn:hover {
+				background-color: #111;
+				color: #fff;
+				transform: translateY(-2px);
+			}
 			.feature-cards {
 				display: grid;
 				grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -79,6 +104,13 @@ import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
 					這是一個用來記錄自主學習、實驗室研究歷程與專題進度的數位空間。主要作為化學領域的文獻統整、日常家教備課紀錄，以及個人跨域學習的存放處。<br/><br/>
 					目前網站仍在建置中，第一版以學習紀錄與作品集架構為主，未來將逐步加入文獻搜尋與分析小工具。
 				</p>
+				<!-- 快捷按鈕區塊 -->
+				<div class="quick-links">
+					<a href="https://gemini.google.com/" target="_blank" class="link-btn">✨ Gemini</a>
+					<a href="https://github.com/" target="_blank" class="link-btn">🐙 GitHub</a>
+					<a href="https://dash.cloudflare.com/" target="_blank" class="link-btn">☁️ Cloudflare</a>
+					<a href="https://www.instagram.com/kwzplaylist_music/" target="_blank" class="link-btn">🎧 翻譯專頁</a>
+				</div>
 			</section>
 
 			<section class="feature-cards">
