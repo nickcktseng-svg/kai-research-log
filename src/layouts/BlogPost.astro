@@ -7,50 +7,64 @@ import FormattedDate from '../components/FormattedDate.astro';
 import Header from '../components/Header.astro';
 
 type Props = CollectionEntry<'blog'>['data'];
-
 const { title, description, pubDate, updatedDate, heroImage } = Astro.props;
 ---
 
-<html lang="en">
+<html lang="zh-TW">
 	<head>
 		<BaseHead title={title} description={description} />
 		<style>
 			main {
-				width: calc(100% - 2em);
-				max-width: 100%;
-				margin: 0;
+				width: 100%;
+				margin: 0 auto;
 			}
 			.hero-image {
 				width: 100%;
+				max-width: 900px;
+				margin: 0 auto 2em auto;
 			}
 			.hero-image img {
 				display: block;
 				margin: 0 auto;
-				border-radius: 12px;
-				box-shadow: var(--box-shadow);
+				border-radius: 16px; /* 更圓潤的導角設計 */
+				box-shadow: 0 8px 30px rgba(0, 0, 0, 0.04); /* 極簡約的乾淨陰影 */
+				max-width: 100%;
+				height: auto;
 			}
 			.prose {
-				width: 720px;
-				max-width: calc(100% - 2em);
+				width: 100%;
+				max-width: 720px; /* 適合閱讀的最佳寬度 */
 				margin: auto;
-				padding: 1em;
-				color: rgb(var(--gray-dark));
+				padding: 2em 1em;
+				color: #111;
+				line-height: 1.8; /* 增加行距，提升閱讀舒適度 */
+				font-size: 1.1rem;
 			}
 			.title {
-				margin-bottom: 1em;
-				padding: 1em 0;
+				margin-bottom: 2.5em;
 				text-align: center;
-				line-height: 1;
+				line-height: 1.2;
 			}
 			.title h1 {
-				margin: 0 0 0.5em 0;
+				margin: 0.2em 0 0.5em 0;
+				font-size: 3rem; /* 超大、搶眼的極簡風標題 */
+				font-weight: 800;
+				letter-spacing: -0.02em; /* 字元微縮，更有設計感 */
 			}
 			.date {
-				margin-bottom: 0.5em;
-				color: rgb(var(--gray));
+				margin-bottom: 1em;
+				color: #666; /* 次要資訊使用淺灰色 */
+				font-size: 0.95rem;
+				letter-spacing: 0.05em;
 			}
 			.last-updated-on {
-				font-style: italic;
+				font-style: normal;
+				margin-top: 0.5em;
+			}
+			hr {
+				border: none;
+				border-top: 1px solid #eaeaea; /* 非常輕微的淺灰色分隔線 */
+				margin: 2em 0;
 			}
 		</style>
 	</head>
@@ -69,7 +83,7 @@ const { title, description, pubDate, updatedDate, heroImage } = Astro.props;
 							{
 								updatedDate && (
 									<div class="last-updated-on">
-										Last updated on <FormattedDate date={updatedDate} />
+										最後更新於 <FormattedDate date={updatedDate} />
 									</div>
 								)
 							}
