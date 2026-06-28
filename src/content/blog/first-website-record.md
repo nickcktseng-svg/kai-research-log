@@ -15,7 +15,7 @@ pubDate: "2026-06-28"
 ## 階段一：基礎建設 (Astro + Cloudflare Pages)
 
 一開始的挑戰在於環境建立與部署。我選擇了 **Astro** 作為網頁框架，因為它內建了非常適合撰寫研究日誌的內容管理系統（Content Collections）。
-![實驗記錄圖](@assets/blog/20260628-1.png)
+![圖片](/blog/20260628-1.png)
 * **本地端開發：** 透過終端機指令 `npm create astro@latest` 建立基礎架構，並學習使用 Git 將原始碼推送到 GitHub。
 * **自動化部署：** 將 GitHub 儲存庫與 **Cloudflare Pages** 連動。現在只要我推送新的 Markdown 筆記，網站就會在幾分鐘內自動更新，完全不需要自己管理伺服器。
 * **視覺重塑：** 為了讓閱讀體驗更好，我重寫了 `global.css` 與排版佈局，將原本預設的亮藍色調，改為乾淨、簡約且專注於內容呈現的極簡黑白風格。
