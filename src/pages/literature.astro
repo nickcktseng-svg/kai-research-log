@@ -234,18 +234,46 @@ import { SITE_TITLE } from '../consts';
 				text-decoration: none;
 			}
 			.btn-open:hover { background: #eaeaea; }
-			/* 載入更多按鈕 */
-			.load-more-container {
-				text-align: center;
-				margin-top: 40px;
+			
+			/* ---------- 全新分頁系統樣式 ---------- */
+			.pagination {
+				display: flex;
+				justify-content: center;
+				align-items: center;
+				gap: 8px;
+				margin-top: 50px;
+				flex-wrap: wrap;
 			}
-			#loadMoreBtn {
-				background-color: #f5f5f5;
+			.page-btn {
+				background: #fff;
 				color: #111;
 				border: 1px solid #ddd;
-				display: none; /* 預設隱藏 */
+				padding: 8px 16px;
+				border-radius: 8px;
+				cursor: pointer;
+				font-weight: 600;
+				font-size: 0.95rem;
+				transition: all 0.2s;
 			}
-			#loadMoreBtn:hover { background-color: #eaeaea; }
+			.page-btn:hover:not(:disabled) {
+				background: #f5f5f5;
+				border-color: #bbb;
+			}
+			.page-btn.active {
+				background: #111;
+				color: #fff;
+				border-color: #111;
+			}
+			.page-btn:disabled {
+				opacity: 0.4;
+				cursor: not-allowed;
+				background: #fafafa;
+			}
+			.page-info {
+				color: #888;
+				font-size: 0.95rem;
+				margin-left: 8px;
+			}
 
 			@media (max-width: 720px) {
 				.search-box { flex-direction: column; align-items: stretch; }
@@ -278,9 +306,7 @@ import { SITE_TITLE } from '../consts';
 			<div id="statusMsg"></div>
 			<div id="paperResults" class="paper-list"></div>
 			
-			<div class="load-more-container">
-				<button id="loadMoreBtn" class="search-btn">載入更多文獻 ↓</button>
-			</div>
+			<div id="paginationContainer" class="pagination"></div>
 		</main>
 		<Footer />
 
@@ -290,12 +316,14 @@ import { SITE_TITLE } from '../consts';
 				const sortSelect = document.getElementById('sortSelect');
 				const oaCheckbox = document.getElementById('oaCheckbox');
 				const searchBtn = document.getElementById('searchBtn');
-				const loadMoreBtn = document.getElementById('loadMoreBtn');
 				const statusMsg = document.getElementById('statusMsg');
 				const resultsContainer = document.getElementById('paperResults');
+				const paginationContainer = document.getElementById('paginationContainer');
 
-				let currentPage = 1;
+				// 儲存當前的搜尋狀態，避免切換頁面時條件跑掉
 				let currentQuery = '';
+				let currentSort = '';
+				let currentIsOa = false;
 
 				function reconstructAbstract(invertedIndex) {
 					if (!invertedIndex) return '此篇文獻未提供摘要資料...';
@@ -307,10 +335,9 @@ import { SITE_TITLE } from '../consts';
 					return words.join(' ') + '...';
 				}
 
-				function generateRecommendations(paper, index) {
+				function generateRecommendations(paper, index, currentPage) {
 					let reasons = [];
-					// @ts-ignore
-					if (index < 3 && sortSelect.value.includes('relevance')) reasons.push('主題高度相關');
+					if (currentPage === 1 && index < 3 && currentSort.includes('relevance')) reasons.push('主題高度相關');
 					if (paper.publication_year <= 2018) reasons.push('較早期文獻，可作背景補充');
 					if (paper.publication_year >= 2024) reasons.push('最新發表研究，掌握前沿動態');
 					if (paper.cited_by_count > 500) reasons.push('高引用文獻，可能是領域代表作');
@@ -319,13 +346,12 @@ import { SITE_TITLE } from '../consts';
 					return reasons.map(r => `<li>${r}</li>`).join('');
 				}
 
-				function calculateDisplayScore(paper, index) {
-					let baseScore = 95 - (index * 1.5); 
+				function calculateDisplayScore(paper, overallIndex) {
+					let baseScore = 95 - (overallIndex * 0.5); // 降低扣分幅度，讓後面頁面的分數緩慢下降
 					if (paper.cited_by_count > 1000) baseScore += 5;
-					return Math.min(100, Math.max(60, Math.round(baseScore)));
+					return Math.min(100, Math.max(50, Math.round(baseScore)));
 				}
 
-				// 產生標準引用格式 (APA Style 簡化版)
 				function generateCitation(paper) {
 					let authors = 'Unknown Author';
 					if (paper.authorships && paper.authorships.length > 0) {
@@ -338,30 +364,92 @@ import { SITE_TITLE } from '../consts';
 					return `${authors} (${year}). ${title}. ${journal ? journal + '.' : ''}${doi}`;
 				}
 
-				async function searchPapers(isLoadMore = false) {
-					// @ts-ignore
-					const query = searchInput.value.trim();
-					// @ts-ignore
-					const sortBy = sortSelect.value;
-					// @ts-ignore
-					const isOaOnly = oaCheckbox.checked;
+				// 渲染分頁按鈕的邏輯
+				function renderPagination(totalCount, currentPage) {
+					if (!paginationContainer) return;
+					paginationContainer.innerHTML = '';
+					
+					if (totalCount === 0) return;
 
-					if (!query) return;
+					// 假設一頁 10 筆資料，計算總頁數 (為避免 API 負荷過重，限制最多只能看前 100 頁)
+					const totalPages = Math.ceil(totalCount / 10);
+					const maxAllowedPages = Math.min(totalPages, 100); 
+					const maxVisibleBtns = 5; // 畫面上最多顯示幾個數字按鈕
 
-					if (!isLoadMore) {
-						currentPage = 1;
-						currentQuery = query;
-						if(resultsContainer) resultsContainer.innerHTML = '';
-						if(loadMoreBtn) loadMoreBtn.style.display = 'none';
-					} else {
-						currentPage++;
+					// 產生 [上一頁] 按鈕
+					const prevBtn = document.createElement('button');
+					prevBtn.className = 'page-btn';
+					prevBtn.textContent = '← 上一頁';
+					prevBtn.disabled = currentPage === 1;
+					prevBtn.addEventListener('click', () => {
+						window.scrollTo({ top: 0, behavior: 'smooth' });
+						searchPapers(currentPage - 1);
+					});
+					paginationContainer.appendChild(prevBtn);
+
+					// 計算數字按鈕的起始與結束範圍
+					let startPage = Math.max(1, currentPage - Math.floor(maxVisibleBtns / 2));
+					let endPage = Math.min(maxAllowedPages, startPage + maxVisibleBtns - 1);
+					
+					if (endPage - startPage + 1 < maxVisibleBtns) {
+						startPage = Math.max(1, endPage - maxVisibleBtns + 1);
 					}
 
-					if(statusMsg) statusMsg.textContent = isLoadMore ? '載入中，請稍候...' : '搜尋中，請稍候...';
+					// 產生數字按鈕
+					for (let i = startPage; i <= endPage; i++) {
+						const pageBtn = document.createElement('button');
+						pageBtn.className = `page-btn ${i === currentPage ? 'active' : ''}`;
+						pageBtn.textContent = i.toString();
+						if (i !== currentPage) {
+							pageBtn.addEventListener('click', () => {
+								window.scrollTo({ top: 0, behavior: 'smooth' });
+								searchPapers(i);
+							});
+						}
+						paginationContainer.appendChild(pageBtn);
+					}
+
+					// 產生 [下一頁] 按鈕
+					const nextBtn = document.createElement('button');
+					nextBtn.className = 'page-btn';
+					nextBtn.textContent = '下一頁 →';
+					nextBtn.disabled = currentPage === maxAllowedPages;
+					nextBtn.addEventListener('click', () => {
+						window.scrollTo({ top: 0, behavior: 'smooth' });
+						searchPapers(currentPage + 1);
+					});
+					paginationContainer.appendChild(nextBtn);
+
+					// 如果總頁數很多，加上一個文字提示
+					if (maxAllowedPages > endPage) {
+						const infoSpan = document.createElement('span');
+						infoSpan.className = 'page-info';
+						infoSpan.textContent = `... 共 ${maxAllowedPages} 頁`;
+						paginationContainer.appendChild(infoSpan);
+					}
+				}
+
+				// 主要搜尋功能 (現在接收 pageNumber 參數)
+				async function searchPapers(pageNumber = 1) {
+					// 只有在第一頁搜尋時，才去抓取輸入框最新輸入的條件
+					if (pageNumber === 1) {
+						// @ts-ignore
+						currentQuery = searchInput.value.trim();
+						// @ts-ignore
+						currentSort = sortSelect.value;
+						// @ts-ignore
+						currentIsOa = oaCheckbox.checked;
+					}
+
+					if (!currentQuery) return;
+
+					if(statusMsg) statusMsg.textContent = '搜尋與分析中，請稍候...';
+					if(resultsContainer) resultsContainer.innerHTML = '';
+					if(paginationContainer) paginationContainer.innerHTML = '';
 
 					try {
-						let url = `https://api.openalex.org/works?search=${encodeURIComponent(currentQuery)}&per-page=10&page=${currentPage}&sort=${sortBy}`;
-						if (isOaOnly) {
+						let url = `https://api.openalex.org/works?search=${encodeURIComponent(currentQuery)}&per-page=10&page=${pageNumber}&sort=${currentSort}`;
+						if (currentIsOa) {
 							url += '&filter=is_oa:true';
 						}
 
@@ -369,7 +457,12 @@ import { SITE_TITLE } from '../consts';
 						const data = await response.json();
 
 						if (data.results && data.results.length > 0) {
-							if(statusMsg) statusMsg.textContent = `搜尋完成！目前顯示 ${document.querySelectorAll('.paper-card').length + data.results.length} 筆結果。`;
+							// data.meta.count 會回傳符合條件的文獻「總數」
+							const totalResults = data.meta.count;
+							
+							if(statusMsg) {
+								statusMsg.innerHTML = `在 OpenAlex 中為您找到 <b>${totalResults.toLocaleString()}</b> 筆相關文獻（目前顯示第 ${pageNumber} 頁）：`;
+							}
 							
 							data.results.forEach((paper: any, index: number) => {
 								const card = document.createElement('div');
@@ -389,93 +482,4 @@ import { SITE_TITLE } from '../consts';
 								}
 
 								const abstractText = reconstructAbstract(paper.abstract_inverted_index);
-								const recommendations = generateRecommendations(paper, index);
-								
-								// 解決分頁後分數遞減的問題 (讓後面頁數的分數接續算)
-								const overallIndex = ((currentPage - 1) * 10) + index;
-								const displayScore = calculateDisplayScore(paper, overallIndex);
-								const starDisplay = overallIndex < 3 ? '★★★★★ 優先閱讀' : '★★★★☆ 推薦參考';
-								
-								const citationText = generateCitation(paper);
-								const encodedCitation = encodeURIComponent(citationText);
-
-								card.innerHTML = `
-									<div class="card-header">
-										<div class="card-meta-top">
-											<span class="stars">${starDisplay}</span>
-											<h2 class="paper-title">${title} ${isOa ? '<span class="oa-badge">Open Access</span>' : ''}</h2>
-											<p class="paper-subtitle">${year} · ${journal} · Citations: ${citedBy} <br><br> ${authors}</p>
-										</div>
-										<div class="score-badge">
-											<span class="score-number">${displayScore}</span>
-											<span class="score-label">Score</span>
-										</div>
-									</div>
-									
-									<p class="paper-abstract">${abstractText}</p>
-									
-									<div class="recommend-box">
-										<h4>推薦原因</h4>
-										<ul>${recommendations}</ul>
-									</div>
-
-									<div class="action-btns">
-										<button class="btn-copy" data-citation="${encodedCitation}">📋 Copy Citation</button>
-										<a href="#" class="btn-analyze" onclick="alert('本地端 AI 分析功能即將上線！')">Analyze</a>
-										<a href="${link}" target="_blank" class="btn-open">Open Paper</a>
-									</div>
-								`;
-								if(resultsContainer) resultsContainer.appendChild(card);
-							});
-
-							// 如果回傳資料滿 10 筆，代表可能還有下一頁，顯示載入更多按鈕
-							if (data.results.length === 10) {
-								if(loadMoreBtn) loadMoreBtn.style.display = 'inline-block';
-							} else {
-								if(loadMoreBtn) loadMoreBtn.style.display = 'none';
-							}
-
-						} else {
-							if (!isLoadMore && statusMsg) statusMsg.textContent = '找不到相關文獻，請嘗試更換關鍵字或取消 Open Access 篩選。';
-							if (isLoadMore && loadMoreBtn) loadMoreBtn.style.display = 'none';
-						}
-					} catch (error) {
-						console.error('發生錯誤:', error);
-						if(statusMsg) statusMsg.textContent = '連線至資料庫失敗，請稍後再試。';
-					}
-				}
-
-				// 綁定事件
-				if(searchBtn) searchBtn.addEventListener('click', () => searchPapers(false));
-				if(searchInput) searchInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') searchPapers(false); });
-				if(sortSelect) sortSelect.addEventListener('change', () => {
-					// @ts-ignore
-					if(searchInput.value.trim() !== '') searchPapers(false);
-				});
-				if(oaCheckbox) oaCheckbox.addEventListener('change', () => {
-					// @ts-ignore
-					if(searchInput.value.trim() !== '') searchPapers(false);
-				});
-				if(loadMoreBtn) loadMoreBtn.addEventListener('click', () => searchPapers(true));
-
-				// 綁定複製按鈕事件 (使用事件委派)
-				document.addEventListener('click', (e) => {
-					// @ts-ignore
-					if (e.target && e.target.classList.contains('btn-copy')) {
-						e.preventDefault();
-						// @ts-ignore
-						const citation = decodeURIComponent(e.target.getAttribute('data-citation'));
-						navigator.clipboard.writeText(citation).then(() => {
-							// @ts-ignore
-							const originalText = e.target.textContent;
-							// @ts-ignore
-							e.target.textContent = '✅ 已複製！';
-							// @ts-ignore
-							setTimeout(() => { e.target.textContent = originalText; }, 2000);
-						});
-					}
-				});
-			});
-		</script>
-	</body>
-</html>
+								const recommendations = generateRecommendations(
