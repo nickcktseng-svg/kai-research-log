@@ -482,4 +482,88 @@ import { SITE_TITLE } from '../consts';
 								}
 
 								const abstractText = reconstructAbstract(paper.abstract_inverted_index);
-								const recommendations = generateRecommendations(
+								const recommendations = generateRecommendations(paper, index, pageNumber);
+								
+								// 解決分頁後分數的問題 (讓不同頁數的分數正確計算)
+								const overallIndex = ((pageNumber - 1) * 10) + index;
+								const displayScore = calculateDisplayScore(paper, overallIndex);
+								// 只有第一頁的前三篇才給五顆星
+								const starDisplay = overallIndex < 3 ? '★★★★★ 優先閱讀' : '★★★★☆ 推薦參考';
+								
+								const citationText = generateCitation(paper);
+								const encodedCitation = encodeURIComponent(citationText);
+
+								card.innerHTML = `
+									<div class="card-header">
+										<div class="card-meta-top">
+											<span class="stars">${starDisplay}</span>
+											<h2 class="paper-title">${title} ${isOa ? '<span class="oa-badge">Open Access</span>' : ''}</h2>
+											<p class="paper-subtitle">${year} · ${journal} · Citations: ${citedBy} <br><br> ${authors}</p>
+										</div>
+										<div class="score-badge">
+											<span class="score-number">${displayScore}</span>
+											<span class="score-label">Score</span>
+										</div>
+									</div>
+									
+									<p class="paper-abstract">${abstractText}</p>
+									
+									<div class="recommend-box">
+										<h4>推薦原因</h4>
+										<ul>${recommendations}</ul>
+									</div>
+
+									<div class="action-btns">
+										<button class="btn-copy" data-citation="${encodedCitation}">📋 Copy Citation</button>
+										<a href="#" class="btn-analyze" onclick="alert('本地端 AI 分析功能即將上線！')">Analyze</a>
+										<a href="${link}" target="_blank" class="btn-open">Open Paper</a>
+									</div>
+								`;
+								if(resultsContainer) resultsContainer.appendChild(card);
+							});
+
+							// 渲染底部數字分頁按鈕
+							renderPagination(totalResults, pageNumber);
+
+						} else {
+							if (statusMsg) statusMsg.textContent = '找不到相關文獻，請嘗試更換關鍵字或取消 Open Access 篩選。';
+						}
+					} catch (error) {
+						console.error('發生錯誤:', error);
+						if(statusMsg) statusMsg.textContent = '連線至資料庫失敗，請稍後再試。';
+					}
+				}
+
+				// 綁定事件：只有這幾個動作會觸發「回到第一頁重新搜尋」
+				if(searchBtn) searchBtn.addEventListener('click', () => searchPapers(1));
+				if(searchInput) searchInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') searchPapers(1); });
+				if(sortSelect) sortSelect.addEventListener('change', () => {
+					// @ts-ignore
+					if(searchInput.value.trim() !== '') searchPapers(1);
+				});
+				if(oaCheckbox) oaCheckbox.addEventListener('change', () => {
+					// @ts-ignore
+					if(searchInput.value.trim() !== '') searchPapers(1);
+				});
+
+				// 綁定複製按鈕事件
+				document.addEventListener('click', (e) => {
+					// @ts-ignore
+					if (e.target && e.target.classList.contains('btn-copy')) {
+						e.preventDefault();
+						// @ts-ignore
+						const citation = decodeURIComponent(e.target.getAttribute('data-citation'));
+						navigator.clipboard.writeText(citation).then(() => {
+							// @ts-ignore
+							const originalText = e.target.textContent;
+							// @ts-ignore
+							e.target.textContent = '✅ 已複製！';
+							// @ts-ignore
+							setTimeout(() => { e.target.textContent = originalText; }, 2000);
+						});
+					}
+				});
+			});
+		</script>
+	</body>
+</html>
