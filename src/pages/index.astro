@@ -1,134 +1,215 @@
 ---
-import BaseHead from '../components/BaseHead.astro';
-import Footer from '../components/Footer.astro';
-import Header from '../components/Header.astro';
-import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
+import { Image } from 'astro:assets';
+import { getCollection } from 'astro:content';
+import BaseHead from '../../components/BaseHead.astro';
+import Footer from '../../components/Footer.astro';
+import FormattedDate from '../../components/FormattedDate.astro';
+import Header from '../../components/Header.astro';
+import { SITE_DESCRIPTION, SITE_TITLE } from '../../consts';
+
+const posts = (await getCollection('blog')).sort(
+	(a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf(),
+);
 ---
 
 <!doctype html>
 <html lang="zh-TW">
 	<head>
-		<BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} />
+		<BaseHead title={`學習日誌 | ${SITE_TITLE}`} description={SITE_DESCRIPTION} />
 		<style>
 			main {
 				width: 100%;
 				max-width: 1000px;
 				margin: 0 auto;
 				padding: 40px 20px;
-				font-family: system-ui, -apple-system, sans-serif;
 			}
-			.hero {
-				padding: 80px 0 60px 0;
-			}
-			.hero h1 {
-				font-size: 5rem; /* 呼應截圖中的超大標題 */
+			.page-title {
+				font-size: 3.5rem;
 				font-weight: 800;
-				line-height: 1.05;
-				margin-bottom: 0.3em;
-				letter-spacing: -0.03em;
+				margin-bottom: 10px;
+				letter-spacing: -0.02em;
 				color: #111;
 			}
-			.hero h1 span {
-				display: block;
-				font-size: 4rem;
-				color: #666; /* 英文名字用稍淺的顏色做出層次 */
-				margin-top: 5px;
-			}
-			.intro-text {
-				font-size: 1.2rem;
-				color: #555;
-				line-height: 1.8;
-				max-width: 700px;
-				margin-top: 30px;
-			}
-			/* 快速連結按鈕區塊 */
-			.quick-links {
-				display: flex;
-				gap: 16px;
-				margin-top: 32px;
-				flex-wrap: wrap;
-			}
-			.link-btn {
-				display: inline-flex;
-				align-items: center;
-				padding: 10px 20px;
-				background-color: #f5f5f5;
-				color: #111;
-				text-decoration: none;
-				border-radius: 30px;
-				font-size: 0.95rem;
-				font-weight: 600;
-				border: 1px solid #eaeaea;
-				transition: all 0.2s ease;
-			}
-			.link-btn:hover {
-				background-color: #111;
-				color: #fff;
-				transform: translateY(-2px);
-			}
-			.feature-cards {
-				display: grid;
-				grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-				gap: 24px;
-				margin-top: 60px;
+			.page-desc {
+				color: #666;
+				font-size: 1.1rem;
 				margin-bottom: 40px;
 			}
-			.card {
-				background: #ffffff;
-				border-radius: 16px; /* 圓角卡片 */
-				padding: 32px;
-				box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04); /* 乾淨微弱的陰影 */
-				border: 1px solid #f5f5f5;
+			/* 搜尋框設計 */
+			.search-container {
+				margin-bottom: 40px;
 			}
-			.card h3 {
-				margin-top: 0;
-				font-size: 1.4rem;
-				color: #111;
+			.search-input {
+				width: 100%;
+				max-width: 600px;
+				padding: 16px 24px;
+				font-size: 1.1rem;
+				border: 1px solid #eaeaea;
+				border-radius: 30px;
+				background-color: #fcfcfc;
+				transition: all 0.2s ease;
+				box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+			}
+			.search-input:focus {
+				outline: none;
+				border-color: #111;
+				box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+				background-color: #fff;
+			}
+			/* 文章列表卡片設計 */
+			ul {
+				display: grid;
+				grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+				gap: 32px;
+				list-style-type: none;
+				margin: 0;
+				padding: 0;
+			}
+			ul li {
+				transition: transform 0.2s ease;
+				width: 100%;
+			}
+			ul li:hover {
+				transform: translateY(-4px);
+			}
+			ul li * {
+				text-decoration: none;
+			}
+			ul li img {
 				margin-bottom: 16px;
-				font-weight: 700;
+				border-radius: 12px;
+				width: 100%;
+				aspect-ratio: 16 / 9;
+				object-fit: cover;
+				box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 			}
-			.card p {
-				color: #666;
-				line-height: 1.6;
-				margin-bottom: 0;
+			.title {
+				margin: 0;
+				color: #111;
+				line-height: 1.4;
+				font-size: 1.4rem;
+				font-weight: 700;
+				transition: color 0.2s ease;
+			}
+			.date {
+				margin: 8px 0 0 0;
+				color: #888;
 				font-size: 0.95rem;
+			}
+			ul li a:hover .title {
+				color: #666;
+			}
+			/* 當找不到文章時的提示 */
+			.no-results {
+				display: none;
+				text-align: center;
+				padding: 40px;
+				color: #666;
+				font-size: 1.2rem;
+				grid-column: 1 / -1;
+			}
+			@media (max-width: 720px) {
+				.page-title {
+					font-size: 2.5rem;
+				}
+				ul {
+					grid-template-columns: 1fr;
+				}
 			}
 		</style>
 	</head>
 	<body>
 		<Header />
 		<main>
-			<section class="hero">
-				<h1>曾智凱 <span>Kai</span></h1>
-				<p class="intro-text">
-					這是一個用來記錄自主學習、實驗室研究歷程與專題進度的數位空間。主要作為化學領域的文獻統整、日常家教備課紀錄，以及個人跨域學習的存放處。<br/><br/>
-					目前網站仍在建置中，第一版以學習紀錄與作品集架構為主，未來將逐步加入文獻搜尋與分析小工具。
-				</p>
-				<div class="quick-links">
-					<a href="https://gemini.google.com/" target="_blank" class="link-btn">✨ Gemini</a>
-					<a href="https://chatgpt.com/" target="_blank" class="link-btn">🤖 ChatGPT</a>
-					<a href="https://claude.ai/" target="_blank" class="link-btn">🧠 Claude</a>
-					<a href="https://www.perplexity.ai/" target="_blank" class="link-btn">🔍 Perplexity</a>
-					<a href="https://github.com/" target="_blank" class="link-btn">🐙 GitHub</a>
-					<a href="https://dash.cloudflare.com/" target="_blank" class="link-btn">☁️ Cloudflare</a>
-				</div>
-			</section>
+			<section>
+				<h1 class="page-title">學習日誌</h1>
+				<p class="page-desc">記錄每一次的學習進度、實作過程與反思。</p>
 
-			<section class="feature-cards">
-				<div class="card">
-					<h3>📝 學習日誌</h3>
-					<p>記錄每一次的實驗進度、實作過程與反思。把零散筆記分類，慢慢變成自己的第二大腦。</p>
+				<div class="search-container">
+					<input 
+						type="text" 
+						id="searchInput" 
+						class="search-input" 
+						placeholder="搜尋關鍵字 (例如: 錯合物滴定) 或 日期 (例如: 6/27, Jun 28)..." 
+					/>
 				</div>
-				<div class="card">
-					<h3>🔍 文獻導航</h3>
-					<p>即將上線：針對特定主題建立的文獻搜尋與本地端分析系統，協助快速梳理論文重點。</p>
-				</div>
-				<div class="card">
-					<h3>💡 跨域探索</h3>
-					<p>除了本科的專業研究，也同步紀錄語言學習、社群經營與翻譯等多元嘗試與靈感。</p>
-				</div>
+
+				<ul id="postList">
+					<div id="noResults" class="no-results">找不到符合的文章，請嘗試其他關鍵字或日期格式。</div>
+					{
+						posts.map((post) => {
+							// 在這裡將文章日期轉換成各種可能被搜尋的格式
+							const d = post.data.pubDate;
+							const month = d.getMonth() + 1;
+							const day = d.getDate();
+							const year = d.getFullYear();
+							
+							// 產生：2026-06-27, 6/27, 06/27
+							const dateFormats = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')} ${month}/${day} ${month.toString().padStart(2, '0')}/${day.toString().padStart(2, '0')}`;
+							
+							// 將標題、日期組合、以及預設的英文字串 (包含 Jun 等月份縮寫) 全部綁在一起轉小寫
+							const searchData = `${post.data.title} ${dateFormats} ${d.toDateString()}`.toLowerCase();
+
+							return (
+								/* 將組合好的搜尋字串綁定在 data-search 屬性上 */
+								<li class="post-item" data-search={searchData}>
+									<a href={`/blog/${post.id}/`}>
+										{post.data.heroImage && (
+											<Image width={720} height={360} src={post.data.heroImage} alt="" />
+										)}
+										<h4 class="title">{post.data.title}</h4>
+										<p class="date">
+											<FormattedDate date={post.data.pubDate} />
+										</p>
+									</a>
+								</li>
+							);
+						})
+					}
+				</ul>
 			</section>
 		</main>
 		<Footer />
+
+		<script>
+			document.addEventListener('DOMContentLoaded', () => {
+				const searchInput = document.getElementById('searchInput');
+				const postItems = document.querySelectorAll('.post-item');
+				const noResults = document.getElementById('noResults');
+
+				if(searchInput) {
+					searchInput.addEventListener('input', (e) => {
+						// 取得使用者輸入的文字，並轉成小寫以忽略大小寫差異
+						// @ts-ignore
+						const searchTerm = e.target.value.toLowerCase().trim();
+						let visibleCount = 0;
+
+						postItems.forEach((item) => {
+							// 抓取我們剛剛寫在 HTML 裡的 data-search 內容
+							const searchData = item.getAttribute('data-search') || '';
+							
+							// 直接比對這個包山包海的字串
+							if (searchData.includes(searchTerm)) {
+								// @ts-ignore
+								item.style.display = 'block';
+								visibleCount++;
+							} else {
+								// @ts-ignore
+								item.style.display = 'none';
+							}
+						});
+
+						// 如果沒有任何文章符合，顯示提示文字
+						if(noResults) {
+							if (visibleCount === 0) {
+								noResults.style.display = 'block';
+							} else {
+								noResults.style.display = 'none';
+							}
+						}
+					});
+				}
+			});
+		</script>
 	</body>
 </html>
