@@ -1,8 +1,7 @@
 ---
-title: "Mac 新手踏入 HPC 計算：國網中心台灣杉三號連線與環境設定避坑指南"
+title: "Mac 踏入 HPC 計算：國網中心台灣杉三號連線與環境設定"
 pubDate: "2026-07-07"
 description: "紀錄在 Mac 上使用 Termius 連線至國網中心（Taiwania 3）時的踩坑經驗，包含 2FA 認證、Vim 操作與 Linux 檔案管理。"
-heroImage: "/blog/default-hero.jpg"
 tags: ["踩坑紀錄", "HPC", "Linux", "實驗紀錄"]
 ---
 
