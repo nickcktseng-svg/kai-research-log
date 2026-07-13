@@ -1,5 +1,5 @@
 ---
-title: "Slab Builder Pro - 開發紀錄與學習筆記"
+title: "Slab Builder Pro - 開發紀錄與學習筆記（Phase 3）"
 description: "紀錄 Slab Builder Pro 的開發歷程、功能實作細節，以及表面計算化學的核心知識點與參數設定指南。"
 pubDate: "2026-07-13"
 tags: ["開發紀錄", "計算化學", "VASP", "ASE"]
