@@ -78,6 +78,15 @@ import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
 				padding: 32px;
 				box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
 				border: 1px solid #f5f5f5;
+				text-decoration: none;
+				color: inherit;
+				transition:
+				transform 0.2s ease,
+				box-shadow 0.2s ease;
+			}
+			.card:hover {
+				transform: translateY(-4px);
+				box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
 			}
 			.card h3 {
 				margin-top: 0;
@@ -108,25 +117,40 @@ import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
 					<a href="https://chatgpt.com/" target="_blank" class="link-btn">🤖 ChatGPT</a>
 					<a href="https://claude.ai/" target="_blank" class="link-btn">🧠 Claude</a>
 					<a href="https://www.perplexity.ai/" target="_blank" class="link-btn">🔍 Perplexity</a>
-					<a href="https://github.com/" target="_blank" class="link-btn">🐙 GitHub</a>
+					<a
+					href="https://github.com/nickcktseng-svg"
+					target="_blank"
+					rel="noopener noreferrer"
+					class="link-btn"
+					>
+					🐙 GitHub
+					</a>
 					<a href="https://dash.cloudflare.com/" target="_blank" class="link-btn">☁️ Cloudflare</a>
 				</div>
 			</section>
 
 			<section class="feature-cards">
-				<div class="card">
-					<h3>📝 學習日誌</h3>
-					<p>記錄每一次的實驗進度、實作過程與反思。把零散筆記分類，慢慢變成自己的第二大腦。</p>
-				</div>
-				<div class="card">
-					<h3>🔍 文獻導航</h3>
-					<p>即將上線：針對特定主題建立的文獻搜尋與本地端分析系統，協助快速梳理論文重點。</p>
-				</div>
-				<div class="card">
-					<h3>💡 跨域探索</h3>
-					<p>除了本科的專業研究，也同步紀錄語言學習、社群經營與翻譯等多元嘗試與靈感。</p>
-				</div>
-			</section>
+	<a href="/blog" class="card">
+		<h3>📝 研究日誌</h3>
+		<p>
+			記錄實驗室研究、計算環境設定、程式開發、問題排除與每個階段的研究反思。
+		</p>
+	</a>
+
+	<a href="/literature" class="card">
+		<h3>🔍 文獻導航</h3>
+		<p>
+			透過 OpenAlex 搜尋學術文獻，支援年份、引用數、關聯度與 Open Access 篩選。
+		</p>
+	</a>
+
+	<a href="/about" class="card">
+		<h3>🧪 研究與工具</h3>
+		<p>
+			整理 VASP、DFT、HPC、ASE、Slab 模型建構，以及 AI 輔助研究工具的學習過程。
+		</p>
+	</a>
+</section>
 		</main>
 		<Footer />
 	</body>
