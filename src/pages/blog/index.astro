@@ -94,6 +94,32 @@ const posts = (await getCollection('blog')).sort(
 				color: #888;
 				font-size: 0.95rem;
 			}
+			.post-meta {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 8px;
+				margin-top: 12px;
+			}
+
+			.category,
+			.tag {
+				display: inline-flex;
+				align-items: center;
+				border-radius: 999px;
+				font-size: 0.8rem;
+				line-height: 1;
+				padding: 7px 10px;
+			}
+
+			.category {
+				background: #111;
+				color: #fff;
+			}
+
+			.tag {
+				background: #f3f4f6;
+				color: #444;
+			}
 			ul li a:hover .title {
 				color: #666;
 			}
@@ -131,8 +157,8 @@ const posts = (await getCollection('blog')).sort(
 					/>
 				</div>
 
-				<ul id="postList">
-					<div id="noResults" class="no-results">找不到符合的文章，請嘗試其他關鍵字或日期格式。</div>
+					<ul id="postList">
+						<li id="noResults" class="no-results">找不到符合的文章，請嘗試其他關鍵字或日期格式。</li>
 					{
 						posts.map((post) => {
 							const d = post.data.pubDate;
@@ -141,8 +167,15 @@ const posts = (await getCollection('blog')).sort(
 							const year = d.getFullYear();
 							
 							const dateFormats = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')} ${month}/${day} ${month.toString().padStart(2, '0')}/${day.toString().padStart(2, '0')}`;
-							const searchData = `${post.data.title} ${dateFormats} ${d.toDateString()}`.toLowerCase();
 
+							const searchData = `
+								${post.data.title}
+								${post.data.description}
+								${post.data.category}
+								${post.data.tags.join(' ')}
+								${dateFormats}
+								${d.toDateString()}
+							`.toLowerCase();
 							return (
 								<li class="post-item" data-search={searchData}>
 									<a href={`/blog/${post.id}/`}>
@@ -152,6 +185,13 @@ const posts = (await getCollection('blog')).sort(
 										<h4 class="title">{post.data.title}</h4>
 										<p class="date">
 											<FormattedDate date={post.data.pubDate} />
+										<div class="post-meta">
+											<span class="category">{post.data.category}</span>
+
+												{post.data.tags.map((tag) => (
+											<span class="tag">{tag}</span>
+												))}
+										</div>
 										</p>
 									</a>
 								</li>
