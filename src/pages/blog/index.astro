@@ -16,6 +16,7 @@ const posts = (await getCollection('blog')).sort(
 <html lang="zh-TW">
 	<head>
 		<BaseHead title={`學習日誌 | ${SITE_TITLE}`} description={SITE_DESCRIPTION} />
+
 		<style>
 			main {
 				width: 100%;
@@ -23,6 +24,7 @@ const posts = (await getCollection('blog')).sort(
 				margin: 0 auto;
 				padding: 40px 20px;
 			}
+
 			.page-title {
 				font-size: 3.5rem;
 				font-weight: 800;
@@ -30,14 +32,17 @@ const posts = (await getCollection('blog')).sort(
 				letter-spacing: -0.02em;
 				color: #111;
 			}
+
 			.page-desc {
 				color: #666;
 				font-size: 1.1rem;
 				margin-bottom: 40px;
 			}
+
 			.search-container {
 				margin-bottom: 40px;
 			}
+
 			.search-input {
 				width: 100%;
 				max-width: 600px;
@@ -47,14 +52,16 @@ const posts = (await getCollection('blog')).sort(
 				border-radius: 30px;
 				background-color: #fcfcfc;
 				transition: all 0.2s ease;
-				box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+				box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
 			}
+
 			.search-input:focus {
 				outline: none;
 				border-color: #111;
-				box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+				box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
 				background-color: #fff;
 			}
+
 			ul {
 				display: grid;
 				grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -63,16 +70,20 @@ const posts = (await getCollection('blog')).sort(
 				margin: 0;
 				padding: 0;
 			}
+
 			ul li {
 				transition: transform 0.2s ease;
 				width: 100%;
 			}
+
 			ul li:hover {
 				transform: translateY(-4px);
 			}
+
 			ul li * {
 				text-decoration: none;
 			}
+
 			ul li img {
 				margin-bottom: 16px;
 				border-radius: 12px;
@@ -81,6 +92,7 @@ const posts = (await getCollection('blog')).sort(
 				object-fit: cover;
 				box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 			}
+
 			.title {
 				margin: 0;
 				color: #111;
@@ -89,11 +101,13 @@ const posts = (await getCollection('blog')).sort(
 				font-weight: 700;
 				transition: color 0.2s ease;
 			}
+
 			.date {
-				margin: 8px 0 0 0;
+				margin: 8px 0 0;
 				color: #888;
 				font-size: 0.95rem;
 			}
+
 			.post-meta {
 				display: flex;
 				flex-wrap: wrap;
@@ -120,9 +134,11 @@ const posts = (await getCollection('blog')).sort(
 				background: #f3f4f6;
 				color: #444;
 			}
+
 			ul li a:hover .title {
 				color: #666;
 			}
+
 			.no-results {
 				display: none;
 				text-align: center;
@@ -131,42 +147,60 @@ const posts = (await getCollection('blog')).sort(
 				font-size: 1.2rem;
 				grid-column: 1 / -1;
 			}
+
 			@media (max-width: 720px) {
 				.page-title {
 					font-size: 2.5rem;
 				}
+
 				ul {
 					grid-template-columns: 1fr;
 				}
 			}
 		</style>
 	</head>
+
 	<body>
 		<Header />
+
 		<main>
 			<section>
 				<h1 class="page-title">學習日誌</h1>
-				<p class="page-desc">記錄每一次的學習進度、實作過程與反思。</p>
+
+				<p class="page-desc">
+					記錄每一次的學習進度、實作過程與反思。
+				</p>
 
 				<div class="search-container">
-					<input 
-						type="text" 
-						id="searchInput" 
-						class="search-input" 
-						placeholder="搜尋關鍵字 (例如: 錯合物滴定) 或 日期 (例如: 6/27, Jun 28)..." 
+					<input
+						type="text"
+						id="searchInput"
+						class="search-input"
+						placeholder="搜尋標題、分類、標籤或日期，例如：OpenAlex、網站開發、6/28"
 					/>
 				</div>
 
-					<ul id="postList">
-						<li id="noResults" class="no-results">找不到符合的文章，請嘗試其他關鍵字或日期格式。</li>
+				<ul id="postList">
+					<li id="noResults" class="no-results">
+						找不到符合的文章，請嘗試其他關鍵字或日期格式。
+					</li>
+
 					{
 						posts.map((post) => {
-							const d = post.data.pubDate;
-							const month = d.getMonth() + 1;
-							const day = d.getDate();
-							const year = d.getFullYear();
-							
-							const dateFormats = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')} ${month}/${day} ${month.toString().padStart(2, '0')}/${day.toString().padStart(2, '0')}`;
+							const date = post.data.pubDate;
+							const month = date.getMonth() + 1;
+							const day = date.getDate();
+							const year = date.getFullYear();
+
+							const dateFormats = `
+								${year}-${month.toString().padStart(2, '0')}-${day
+									.toString()
+									.padStart(2, '0')}
+								${month}/${day}
+								${month.toString().padStart(2, '0')}/${day
+									.toString()
+									.padStart(2, '0')}
+							`;
 
 							const searchData = `
 								${post.data.title}
@@ -174,25 +208,40 @@ const posts = (await getCollection('blog')).sort(
 								${post.data.category}
 								${post.data.tags.join(' ')}
 								${dateFormats}
-								${d.toDateString()}
+								${date.toDateString()}
 							`.toLowerCase();
+
 							return (
 								<li class="post-item" data-search={searchData}>
 									<a href={`/blog/${post.id}/`}>
-										{post.data.heroImage && (
-											<Image width={720} height={360} src={post.data.heroImage} alt="" />
-										)}
+										{
+											post.data.heroImage && (
+												<Image
+													width={720}
+													height={360}
+													src={post.data.heroImage}
+													alt={post.data.title}
+												/>
+											)
+										}
+
 										<h4 class="title">{post.data.title}</h4>
+
 										<p class="date">
 											<FormattedDate date={post.data.pubDate} />
-										<div class="post-meta">
-											<span class="category">{post.data.category}</span>
-
-												{post.data.tags.map((tag) => (
-											<span class="tag">{tag}</span>
-												))}
-										</div>
 										</p>
+
+										<div class="post-meta">
+											<span class="category">
+												{post.data.category}
+											</span>
+
+											{
+												post.data.tags.map((tag) => (
+													<span class="tag">{tag}</span>
+												))
+											}
+										</div>
 									</a>
 								</li>
 							);
@@ -201,6 +250,7 @@ const posts = (await getCollection('blog')).sort(
 				</ul>
 			</section>
 		</main>
+
 		<Footer />
 
 		<script>
@@ -209,34 +259,33 @@ const posts = (await getCollection('blog')).sort(
 				const postItems = document.querySelectorAll('.post-item');
 				const noResults = document.getElementById('noResults');
 
-				if(searchInput) {
-					searchInput.addEventListener('input', (e) => {
-						// @ts-ignore
-						const searchTerm = e.target.value.toLowerCase().trim();
-						let visibleCount = 0;
+				if (!(searchInput instanceof HTMLInputElement)) return;
 
-						postItems.forEach((item) => {
-							const searchData = item.getAttribute('data-search') || '';
-							
-							if (searchData.includes(searchTerm)) {
-								// @ts-ignore
-								item.style.display = 'block';
-								visibleCount++;
-							} else {
-								// @ts-ignore
-								item.style.display = 'none';
-							}
-						});
+				searchInput.addEventListener('input', () => {
+					const searchTerm = searchInput.value.toLowerCase().trim();
+					let visibleCount = 0;
 
-						if(noResults) {
-							if (visibleCount === 0) {
-								noResults.style.display = 'block';
-							} else {
-								noResults.style.display = 'none';
-							}
+					postItems.forEach((item) => {
+						if (!(item instanceof HTMLElement)) return;
+
+						const searchData =
+							item.getAttribute('data-search') || '';
+
+						const isVisible =
+							searchData.includes(searchTerm);
+
+						item.style.display = isVisible ? 'block' : 'none';
+
+						if (isVisible) {
+							visibleCount++;
 						}
 					});
-				}
+
+					if (noResults instanceof HTMLElement) {
+						noResults.style.display =
+							visibleCount === 0 ? 'block' : 'none';
+					}
+				});
 			});
 		</script>
 	</body>
