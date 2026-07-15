@@ -2,6 +2,14 @@
 title: "建立個人研究網站：Astro 與 Cloudflare 部署實錄"
 description: "紀錄從零開始架設個人網站、部署至 Cloudflare，並串接 OpenAlex 建立專屬文獻搜尋系統的歷程。"
 pubDate: "2026-06-28"
+
+category: "網站開發"
+tags:
+  - "Astro"
+  - "Cloudflare"
+  - "OpenAlex"
+  - "研究工具"
+draft: false
 ---
 
 ## 專案動機與目標
