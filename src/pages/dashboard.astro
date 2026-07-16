@@ -1,0 +1,644 @@
+---
+import { getCollection } from 'astro:content';
+import BaseHead from '../components/BaseHead.astro';
+import Footer from '../components/Footer.astro';
+import FormattedDate from '../components/FormattedDate.astro';
+import Header from '../components/Header.astro';
+import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
+import tasks from '../data/tasks.json';
+import reports from '../data/weekly-reports.json';
+
+type Task = (typeof tasks)[number];
+
+const statusLabels: Record<string, string> = {
+	todo: '未開始',
+	doing: '進行中',
+	done: '已完成',
+};
+
+const priorityLabels: Record<string, string> = {
+	low: '低',
+	medium: '中',
+	high: '高',
+};
+
+const priorityOrder: Record<string, number> = {
+	high: 0,
+	medium: 1,
+	low: 2,
+};
+
+const sortTasks = (taskList: Task[]) =>
+	[...taskList].sort((a, b) => {
+		const priorityDiff =
+			(priorityOrder[a.priority] ?? 99) - (priorityOrder[b.priority] ?? 99);
+		if (priorityDiff !== 0) return priorityDiff;
+		return `${b.date}${b.week}`.localeCompare(`${a.date}${a.week}`);
+	});
+
+const getTaskDate = (task: Task) =>
+	task.type === 'weekly' ? task.week : task.date;
+
+const taskStats = [
+	{ label: '總任務數', value: tasks.length },
+	{ label: '未開始', value: tasks.filter((task) => task.status === 'todo').length },
+	{
+		label: '進行中',
+		value: tasks.filter((task) => task.status === 'doing').length,
+	},
+	{ label: '已完成', value: tasks.filter((task) => task.status === 'done').length },
+];
+
+const doingTasks = sortTasks(tasks.filter((task) => task.status === 'doing'));
+const highPriorityTasks = sortTasks(
+	tasks.filter((task) => task.priority === 'high' && task.status !== 'done'),
+);
+
+const latestReport = [...reports].sort((a, b) =>
+	b.week.localeCompare(a.week),
+)[0];
+
+const latestPosts = (await getCollection('blog', ({ data }) => !data.draft))
+	.sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf())
+	.slice(0, 3);
+
+const quickLinks = [
+	{
+		title: '學習日誌',
+		description: '查看近期研究紀錄、實作過程與反思。',
+		href: '/blog',
+	},
+	{
+		title: '任務管理',
+		description: '追蹤每日與每週任務的完成狀態。',
+		href: '/tasks',
+	},
+	{
+		title: '研究週報',
+		description: '回顧每週完成事項、問題與下一步。',
+		href: '/weekly',
+	},
+	{
+		title: '文章分類',
+		description: '依研究主題整理所有文章。',
+		href: '/categories/',
+	},
+	{
+		title: '文章標籤',
+		description: '用標籤快速找到相關內容。',
+		href: '/tags/',
+	},
+	{
+		title: '文獻搜尋',
+		description: '進入文獻工具與搜尋入口。',
+		href: '/literature',
+	},
+];
+---
+
+<!doctype html>
+<html lang="zh-TW">
+	<head>
+		<BaseHead title={`研究儀表板 | ${SITE_TITLE}`} description={SITE_DESCRIPTION} />
+
+		<style>
+			main {
+				width: 100%;
+				max-width: 1000px;
+				margin: 0 auto;
+				padding: 40px 20px;
+			}
+
+			.page-title {
+				font-size: 3.5rem;
+				font-weight: 800;
+				margin-bottom: 10px;
+				letter-spacing: -0.02em;
+				color: #111;
+			}
+
+			.page-desc {
+				color: #666;
+				font-size: 1.1rem;
+				margin-bottom: 40px;
+				max-width: 760px;
+			}
+
+			.dashboard-section {
+				margin-bottom: 48px;
+			}
+
+			.section-heading {
+				display: flex;
+				align-items: flex-end;
+				justify-content: space-between;
+				gap: 16px;
+				margin-bottom: 18px;
+			}
+
+			.section-title {
+				margin: 0;
+				color: #111;
+				font-size: 1.7rem;
+			}
+
+			.section-desc {
+				margin: 6px 0 0;
+				color: #666;
+				font-size: 0.95rem;
+				line-height: 1.7;
+			}
+
+			.section-link,
+			.card-link {
+				display: inline-flex;
+				align-items: center;
+				width: fit-content;
+				border: 1px solid #e5e7eb;
+				border-radius: 999px;
+				background: #fff;
+				color: #333;
+				padding: 9px 14px;
+				font-size: 0.9rem;
+				font-weight: 700;
+				text-decoration: none;
+				transition:
+					background-color 0.2s ease,
+					border-color 0.2s ease,
+					transform 0.2s ease;
+			}
+
+			.section-link:hover,
+			.card-link:hover {
+				background: #f3f4f6;
+				border-color: #d1d5db;
+				transform: translateY(-2px);
+			}
+
+			.summary-grid,
+			.task-grid,
+			.post-grid,
+			.quick-grid {
+				display: grid;
+				gap: 20px;
+			}
+
+			.summary-grid {
+				grid-template-columns: repeat(4, minmax(0, 1fr));
+				margin-bottom: 48px;
+			}
+
+			.task-grid,
+			.post-grid,
+			.quick-grid {
+				grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+			}
+
+			.stat-card,
+			.task-card,
+			.report-card,
+			.post-card,
+			.quick-card,
+			.empty-state {
+				border: 1px solid #eee;
+				border-radius: 16px;
+				background: #fff;
+				box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+			}
+
+			.stat-card {
+				padding: 22px;
+			}
+
+			.stat-value {
+				display: block;
+				margin-bottom: 8px;
+				color: #111;
+				font-size: 2.4rem;
+				font-weight: 800;
+				line-height: 1;
+			}
+
+			.stat-label {
+				color: #666;
+				font-size: 0.95rem;
+				font-weight: 600;
+			}
+
+			.task-card,
+			.post-card,
+			.quick-card {
+				display: flex;
+				flex-direction: column;
+				gap: 16px;
+				height: 100%;
+				padding: 24px;
+			}
+
+			.report-card {
+				padding: 28px;
+			}
+
+			.card-title,
+			.report-title,
+			.post-title,
+			.quick-title {
+				margin: 0;
+				color: #111;
+				line-height: 1.45;
+			}
+
+			.card-title,
+			.post-title,
+			.quick-title {
+				font-size: 1.2rem;
+			}
+
+			.report-title {
+				font-size: 1.5rem;
+			}
+
+			.card-title a,
+			.post-title a,
+			.quick-title a {
+				color: inherit;
+				text-decoration: none;
+				transition: color 0.2s ease;
+			}
+
+			.card-title a:hover,
+			.post-title a:hover,
+			.quick-title a:hover {
+				color: #666;
+			}
+
+			.card-description,
+			.report-summary,
+			.post-description,
+			.quick-description {
+				margin: 0;
+				color: #555;
+				line-height: 1.75;
+			}
+
+			.meta-row,
+			.tag-list {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 8px;
+			}
+
+			.pill {
+				display: inline-flex;
+				align-items: center;
+				border-radius: 999px;
+				padding: 7px 10px;
+				font-size: 0.8rem;
+				font-weight: 600;
+				line-height: 1;
+			}
+
+			.pill-dark {
+				background: #111;
+				color: #fff;
+			}
+
+			.pill-light {
+				background: #f3f4f6;
+				color: #444;
+			}
+
+			.card-date,
+			.post-date,
+			.report-date {
+				margin: auto 0 0;
+				color: #777;
+				font-size: 0.9rem;
+			}
+
+			.report-header {
+				display: flex;
+				justify-content: space-between;
+				gap: 20px;
+				margin-bottom: 18px;
+			}
+
+			.report-date {
+				margin: 8px 0 0;
+			}
+
+			.report-columns {
+				display: grid;
+				grid-template-columns: repeat(2, minmax(0, 1fr));
+				gap: 24px;
+				margin: 24px 0;
+			}
+
+			.report-column-title {
+				margin: 0 0 10px;
+				color: #111;
+				font-size: 1rem;
+			}
+
+			.report-list {
+				margin: 0;
+				padding-left: 1.2rem;
+				color: #555;
+				line-height: 1.75;
+			}
+
+			.report-list li + li {
+				margin-top: 6px;
+			}
+
+			.empty-state {
+				margin: 0;
+				padding: 24px;
+				color: #666;
+			}
+
+			.quick-card {
+				color: inherit;
+				text-decoration: none;
+				transition:
+					border-color 0.2s ease,
+					box-shadow 0.2s ease,
+					transform 0.2s ease;
+			}
+
+			.quick-card:hover {
+				border-color: #d1d5db;
+				box-shadow: 0 8px 26px rgba(0, 0, 0, 0.06);
+				transform: translateY(-3px);
+			}
+
+			@media (max-width: 840px) {
+				.summary-grid {
+					grid-template-columns: repeat(2, minmax(0, 1fr));
+				}
+			}
+
+			@media (max-width: 720px) {
+				.page-title {
+					font-size: 2.5rem;
+				}
+
+				.section-heading,
+				.report-header {
+					align-items: flex-start;
+					flex-direction: column;
+				}
+
+				.report-card {
+					padding: 22px;
+				}
+
+				.report-columns {
+					grid-template-columns: 1fr;
+				}
+			}
+
+			@media (max-width: 520px) {
+				.summary-grid,
+				.task-grid,
+				.post-grid,
+				.quick-grid {
+					grid-template-columns: 1fr;
+				}
+			}
+		</style>
+	</head>
+
+	<body>
+		<Header />
+
+		<main>
+			<h1 class="page-title">研究儀表板</h1>
+			<p class="page-desc">
+				集中查看近期任務、週報、研究日誌與文獻工具，讓每日研究工作可以持續累積。
+			</p>
+
+			<section class="dashboard-section" aria-labelledby="status-summary">
+				<div class="section-heading">
+					<div>
+						<h2 id="status-summary" class="section-title">研究狀態摘要</h2>
+						<p class="section-desc">快速查看目前任務分布與累積進度。</p>
+					</div>
+				</div>
+
+				<div class="summary-grid">
+					{
+						taskStats.map((stat) => (
+							<article class="stat-card">
+								<span class="stat-value">{stat.value}</span>
+								<span class="stat-label">{stat.label}</span>
+							</article>
+						))
+					}
+				</div>
+			</section>
+
+			<section class="dashboard-section" aria-labelledby="doing-tasks">
+				<div class="section-heading">
+					<div>
+						<h2 id="doing-tasks" class="section-title">目前進行中任務</h2>
+						<p class="section-desc">正在推進的研究、開發與整理工作。</p>
+					</div>
+					<a href="/tasks" class="section-link">查看任務</a>
+				</div>
+
+				{
+					doingTasks.length > 0 ? (
+						<div class="task-grid">
+							{doingTasks.map((task) => (
+								<article class="task-card">
+									<div class="meta-row">
+										<span class="pill pill-dark">
+											{statusLabels[task.status] ?? task.status}
+										</span>
+										<span class="pill pill-light">
+											{priorityLabels[task.priority] ?? task.priority}優先
+										</span>
+										<span class="pill pill-light">{task.category}</span>
+									</div>
+
+									<h3 class="card-title">
+										<a href="/tasks">{task.title}</a>
+									</h3>
+									<p class="card-description">{task.description}</p>
+
+									<div class="tag-list">
+										{task.tags.map((tag) => (
+											<span class="pill pill-light">{tag}</span>
+										))}
+									</div>
+
+									<p class="card-date">{getTaskDate(task)}</p>
+									<a href="/tasks" class="card-link">前往任務</a>
+								</article>
+							))}
+						</div>
+					) : (
+						<p class="empty-state">目前沒有進行中的任務。</p>
+					)
+				}
+			</section>
+
+			<section class="dashboard-section" aria-labelledby="high-priority-tasks">
+				<div class="section-heading">
+					<div>
+						<h2 id="high-priority-tasks" class="section-title">高優先任務</h2>
+						<p class="section-desc">需要優先處理、且尚未完成的任務。</p>
+					</div>
+					<a href="/tasks" class="section-link">查看任務</a>
+				</div>
+
+				{
+					highPriorityTasks.length > 0 ? (
+						<div class="task-grid">
+							{highPriorityTasks.map((task) => (
+								<article class="task-card">
+									<div class="meta-row">
+										<span class="pill pill-dark">
+											{statusLabels[task.status] ?? task.status}
+										</span>
+										<span class="pill pill-light">
+											{priorityLabels[task.priority] ?? task.priority}優先
+										</span>
+										<span class="pill pill-light">{task.category}</span>
+									</div>
+
+									<h3 class="card-title">
+										<a href="/tasks">{task.title}</a>
+									</h3>
+									<p class="card-description">{task.description}</p>
+
+									<div class="tag-list">
+										{task.tags.map((tag) => (
+											<span class="pill pill-light">{tag}</span>
+										))}
+									</div>
+
+									<p class="card-date">{getTaskDate(task)}</p>
+									<a href="/tasks" class="card-link">前往任務</a>
+								</article>
+							))}
+						</div>
+					) : (
+						<p class="empty-state">目前沒有高優先的未完成任務。</p>
+					)
+				}
+			</section>
+
+			<section class="dashboard-section" aria-labelledby="latest-weekly">
+				<div class="section-heading">
+					<div>
+						<h2 id="latest-weekly" class="section-title">最新週報</h2>
+						<p class="section-desc">快速回顧本週完成事項與下一步。</p>
+					</div>
+					<a href="/weekly" class="section-link">查看週報</a>
+				</div>
+
+				{
+					latestReport ? (
+						<article class="report-card">
+							<header class="report-header">
+								<div>
+									<h3 class="report-title">{latestReport.title}</h3>
+									<p class="report-date">{latestReport.dateRange}</p>
+								</div>
+								<span class="pill pill-dark">{latestReport.week}</span>
+							</header>
+
+							<p class="report-summary">{latestReport.summary}</p>
+
+							<div class="report-columns">
+								<section>
+									<h4 class="report-column-title">完成事項</h4>
+									<ul class="report-list">
+										{latestReport.completed.slice(0, 3).map((item) => (
+											<li>{item}</li>
+										))}
+									</ul>
+								</section>
+
+								<section>
+									<h4 class="report-column-title">下一步</h4>
+									<ul class="report-list">
+										{latestReport.next.slice(0, 3).map((item) => (
+											<li>{item}</li>
+										))}
+									</ul>
+								</section>
+							</div>
+
+							<a href="/weekly" class="card-link">前往週報</a>
+						</article>
+					) : (
+						<p class="empty-state">目前還沒有週報。</p>
+					)
+				}
+			</section>
+
+			<section class="dashboard-section" aria-labelledby="latest-posts">
+				<div class="section-heading">
+					<div>
+						<h2 id="latest-posts" class="section-title">最新研究日誌</h2>
+						<p class="section-desc">最近更新的三篇研究與學習紀錄。</p>
+					</div>
+					<a href="/blog" class="section-link">查看日誌</a>
+				</div>
+
+				<div class="post-grid">
+					{
+						latestPosts.map((post) => {
+							const category = post.data.category || '未分類';
+							const tags = post.data.tags ?? [];
+
+							return (
+								<article class="post-card">
+									<div class="meta-row">
+										<span class="pill pill-dark">{category}</span>
+										{tags.map((tag) => (
+											<span class="pill pill-light">{tag}</span>
+										))}
+									</div>
+
+									<h3 class="post-title">
+										<a href={`/blog/${post.id}/`}>{post.data.title}</a>
+									</h3>
+									<p class="post-description">{post.data.description}</p>
+									<p class="post-date">
+										<FormattedDate date={post.data.pubDate} />
+									</p>
+								</article>
+							);
+						})
+					}
+				</div>
+			</section>
+
+			<section class="dashboard-section" aria-labelledby="quick-links">
+				<div class="section-heading">
+					<div>
+						<h2 id="quick-links" class="section-title">快速入口</h2>
+						<p class="section-desc">前往研究管理中心的主要功能頁面。</p>
+					</div>
+				</div>
+
+				<div class="quick-grid">
+					{
+						quickLinks.map((link) => (
+							<a href={link.href} class="quick-card">
+								<h3 class="quick-title">{link.title}</h3>
+								<p class="quick-description">{link.description}</p>
+							</a>
+						))
+					}
+				</div>
+			</section>
+		</main>
+
+		<Footer />
+	</body>
+</html>
