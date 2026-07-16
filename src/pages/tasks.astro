@@ -1,0 +1,303 @@
+---
+import BaseHead from '../components/BaseHead.astro';
+import Footer from '../components/Footer.astro';
+import Header from '../components/Header.astro';
+import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
+import tasks from '../data/tasks.json';
+
+const statusLabels = {
+	todo: '未開始',
+	doing: '進行中',
+	done: '已完成',
+};
+
+const priorityLabels = {
+	low: '低',
+	medium: '中',
+	high: '高',
+};
+
+const typeLabels = {
+	daily: '每日',
+	weekly: '每週',
+};
+
+const priorityOrder = {
+	high: 0,
+	medium: 1,
+	low: 2,
+};
+
+const latestDailyDate = tasks
+	.filter((task) => task.type === 'daily')
+	.map((task) => task.date)
+	.sort((a, b) => b.localeCompare(a))[0];
+
+const sortTasks = (taskList: typeof tasks) =>
+	[...taskList].sort((a, b) => {
+		const priorityDiff = priorityOrder[a.priority] - priorityOrder[b.priority];
+		if (priorityDiff !== 0) return priorityDiff;
+		return `${b.date}${b.week}`.localeCompare(`${a.date}${a.week}`);
+	});
+
+const todayTasks = sortTasks(
+	tasks.filter(
+		(task) =>
+			task.type === 'daily' &&
+			task.date === latestDailyDate &&
+			task.status !== 'done',
+	),
+);
+
+const weeklyTasks = sortTasks(
+	tasks.filter((task) => task.type === 'weekly' && task.status !== 'done'),
+);
+
+const completedTasks = sortTasks(tasks.filter((task) => task.status === 'done'));
+
+const taskSections = [
+	{
+		title: '今日任務',
+		description: `依最新日期 ${latestDailyDate} 顯示尚未完成的每日任務。`,
+		tasks: todayTasks,
+		empty: '目前沒有尚未完成的今日任務。',
+	},
+	{
+		title: '本週任務',
+		description: '彙整本週需要推進的研究、開發與整理工作。',
+		tasks: weeklyTasks,
+		empty: '目前沒有尚未完成的本週任務。',
+	},
+	{
+		title: '已完成任務',
+		description: '保留已完成項目，方便回顧近期累積的進度。',
+		tasks: completedTasks,
+		empty: '目前還沒有已完成任務。',
+	},
+];
+---
+
+<!doctype html>
+<html lang="zh-TW">
+	<head>
+		<BaseHead title={`研究任務 | ${SITE_TITLE}`} description={SITE_DESCRIPTION} />
+
+		<style>
+			main {
+				width: 100%;
+				max-width: 1000px;
+				margin: 0 auto;
+				padding: 40px 20px;
+			}
+
+			.page-title {
+				font-size: 3.5rem;
+				font-weight: 800;
+				margin-bottom: 10px;
+				letter-spacing: -0.02em;
+				color: #111;
+			}
+
+			.page-desc {
+				color: #666;
+				font-size: 1.1rem;
+				margin-bottom: 40px;
+				max-width: 720px;
+			}
+
+			.task-section {
+				margin-bottom: 48px;
+			}
+
+			.section-heading {
+				display: flex;
+				align-items: flex-end;
+				justify-content: space-between;
+				gap: 16px;
+				margin-bottom: 18px;
+			}
+
+			.section-title {
+				margin: 0;
+				color: #111;
+				font-size: 1.7rem;
+			}
+
+			.section-desc {
+				margin: 6px 0 0;
+				color: #666;
+				font-size: 0.95rem;
+			}
+
+			.section-count {
+				flex: 0 0 auto;
+				color: #777;
+				font-size: 0.9rem;
+			}
+
+			.task-list {
+				display: grid;
+				grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+				gap: 20px;
+				list-style: none;
+				margin: 0;
+				padding: 0;
+			}
+
+			.task-card {
+				display: flex;
+				flex-direction: column;
+				gap: 16px;
+				height: 100%;
+				padding: 24px;
+				border: 1px solid #eee;
+				border-radius: 16px;
+				background: #fff;
+				box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+			}
+
+			.task-title {
+				margin: 0;
+				color: #111;
+				font-size: 1.2rem;
+				line-height: 1.45;
+			}
+
+			.task-description {
+				margin: 0;
+				color: #555;
+				line-height: 1.75;
+			}
+
+			.task-meta,
+			.tag-list {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 8px;
+			}
+
+			.pill {
+				display: inline-flex;
+				align-items: center;
+				border-radius: 999px;
+				padding: 7px 10px;
+				font-size: 0.8rem;
+				font-weight: 600;
+				line-height: 1;
+			}
+
+			.pill-dark {
+				background: #111;
+				color: #fff;
+			}
+
+			.pill-light {
+				background: #f3f4f6;
+				color: #444;
+			}
+
+			.task-date {
+				margin: auto 0 0;
+				color: #777;
+				font-size: 0.9rem;
+			}
+
+			.empty-state {
+				margin: 0;
+				padding: 24px;
+				border: 1px solid #eee;
+				border-radius: 16px;
+				background: #fff;
+				color: #666;
+			}
+
+			@media (max-width: 720px) {
+				.page-title {
+					font-size: 2.5rem;
+				}
+
+				.section-heading {
+					align-items: flex-start;
+					flex-direction: column;
+				}
+
+				.task-list {
+					grid-template-columns: 1fr;
+				}
+			}
+		</style>
+	</head>
+
+	<body>
+		<Header />
+
+		<main>
+			<h1 class="page-title">研究任務</h1>
+			<p class="page-desc">
+				整理每日與每週的研究工作，讓學習、開發與文獻整理可以持續累積。
+			</p>
+
+			{
+				taskSections.map((section) => (
+					<section class="task-section">
+						<div class="section-heading">
+							<div>
+								<h2 class="section-title">{section.title}</h2>
+								<p class="section-desc">{section.description}</p>
+							</div>
+							<span class="section-count">{section.tasks.length} 項</span>
+						</div>
+
+						{section.tasks.length > 0 ? (
+							<ul class="task-list">
+								{section.tasks.map((task) => (
+									<li>
+										<article class="task-card">
+											<div class="task-meta">
+												<span class="pill pill-dark">
+													{statusLabels[task.status]}
+												</span>
+												<span class="pill pill-light">
+													{priorityLabels[task.priority]}優先
+												</span>
+												<span class="pill pill-light">
+													{typeLabels[task.type]}
+												</span>
+												<span class="pill pill-light">
+													{task.category}
+												</span>
+											</div>
+
+											<h3 class="task-title">{task.title}</h3>
+											<p class="task-description">
+												{task.description}
+											</p>
+
+											<div class="tag-list">
+												{task.tags.map((tag) => (
+													<span class="pill pill-light">
+														{tag}
+													</span>
+												))}
+											</div>
+
+											<p class="task-date">
+												{task.type === 'daily'
+													? task.date
+													: task.week}
+											</p>
+										</article>
+									</li>
+								))}
+							</ul>
+						) : (
+							<p class="empty-state">{section.empty}</p>
+						)}
+					</section>
+				))
+			}
+		</main>
+
+		<Footer />
+	</body>
+</html>
