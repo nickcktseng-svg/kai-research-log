@@ -11,6 +11,10 @@ const posts = (await getCollection('blog', ({ data }) => !data.draft)).sort(
 	(a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf(),
 );
 
+const categories = Array.from(
+	new Set(posts.map((post) => post.data.category || '未分類')),
+).sort((a, b) => a.localeCompare(b, 'zh-Hant'));
+
 const getCategoryUrl = (category: string) =>
 	`/categories/${encodeURIComponent(category)}/`;
 
@@ -72,6 +76,41 @@ const getTagUrl = (tag: string) => `/tags/${encodeURIComponent(tag)}/`;
 				background: #f3f4f6;
 				border-color: #d1d5db;
 				transform: translateY(-2px);
+			}
+
+			.category-filters {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 10px;
+				margin-bottom: 32px;
+			}
+
+			.filter-button {
+				border: 1px solid #e5e7eb;
+				border-radius: 999px;
+				background: #fff;
+				color: #333;
+				padding: 9px 14px;
+				font-size: 0.92rem;
+				font-weight: 600;
+				cursor: pointer;
+				transition:
+					background-color 0.2s ease,
+					border-color 0.2s ease,
+					color 0.2s ease,
+					transform 0.2s ease;
+			}
+
+			.filter-button:hover {
+				background: #f3f4f6;
+				border-color: #d1d5db;
+				transform: translateY(-2px);
+			}
+
+			.filter-button.active {
+				background: #111;
+				border-color: #111;
+				color: #fff;
 			}
 
 			.search-container {
@@ -226,6 +265,30 @@ const getTagUrl = (tag: string) => `/tags/${encodeURIComponent(tag)}/`;
 					<a href="/tags/" class="archive-link">所有標籤</a>
 				</div>
 
+				<div class="category-filters" aria-label="文章分類篩選">
+					<button
+						type="button"
+						class="filter-button active"
+						data-category-filter="all"
+						aria-pressed="true"
+					>
+						全部
+					</button>
+
+					{
+						categories.map((category) => (
+							<button
+								type="button"
+								class="filter-button"
+								data-category-filter={category}
+								aria-pressed="false"
+							>
+								{category}
+							</button>
+						))
+					}
+				</div>
+
 				<div class="search-container">
 					<input
 						type="text"
@@ -269,7 +332,11 @@ const getTagUrl = (tag: string) => `/tags/${encodeURIComponent(tag)}/`;
 							`.toLowerCase();
 
 							return (
-								<li class="post-item" data-search={searchData}>
+								<li
+									class="post-item"
+									data-search={searchData}
+									data-category={category}
+								>
 									<a href={`/blog/${post.id}/`} class="post-link">
 										{
 											post.data.heroImage && (
@@ -320,10 +387,13 @@ const getTagUrl = (tag: string) => `/tags/${encodeURIComponent(tag)}/`;
 				const searchInput = document.getElementById('searchInput');
 				const postItems = document.querySelectorAll('.post-item');
 				const noResults = document.getElementById('noResults');
+				const filterButtons =
+					document.querySelectorAll('.filter-button');
+				let activeCategory = 'all';
 
 				if (!(searchInput instanceof HTMLInputElement)) return;
 
-				searchInput.addEventListener('input', () => {
+				const updatePostVisibility = () => {
 					const searchTerm = searchInput.value.toLowerCase().trim();
 					let visibleCount = 0;
 
@@ -332,9 +402,14 @@ const getTagUrl = (tag: string) => `/tags/${encodeURIComponent(tag)}/`;
 
 						const searchData =
 							item.getAttribute('data-search') || '';
+						const matchesSearch =
+							searchData.includes(searchTerm);
+						const matchesCategory =
+							activeCategory === 'all' ||
+							item.dataset.category === activeCategory;
 
 						const isVisible =
-							searchData.includes(searchTerm);
+							matchesSearch && matchesCategory;
 
 						item.style.display = isVisible ? 'block' : 'none';
 
@@ -347,6 +422,32 @@ const getTagUrl = (tag: string) => `/tags/${encodeURIComponent(tag)}/`;
 						noResults.style.display =
 							visibleCount === 0 ? 'block' : 'none';
 					}
+				};
+
+				searchInput.addEventListener('input', updatePostVisibility);
+
+				filterButtons.forEach((button) => {
+					if (!(button instanceof HTMLButtonElement)) return;
+
+					button.addEventListener('click', () => {
+						activeCategory =
+							button.dataset.categoryFilter || 'all';
+
+						filterButtons.forEach((filterButton) => {
+							if (!(filterButton instanceof HTMLButtonElement)) {
+								return;
+							}
+
+							const isActive = filterButton === button;
+							filterButton.classList.toggle('active', isActive);
+							filterButton.setAttribute(
+								'aria-pressed',
+								String(isActive),
+							);
+						});
+
+						updatePostVisibility();
+					});
 				});
 			});
 		</script>
