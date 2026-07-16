@@ -2,7 +2,13 @@
 title: "Mac 踏入 HPC 計算：國網中心台灣杉三號連線與環境設定"
 pubDate: "2026-07-06"
 description: "紀錄在 Mac 上使用 Termius 連線至國網中心（Taiwania 3）時的踩坑經驗，包含 2FA 認證、Vim 操作與 Linux 檔案管理。"
-tags: ["踩坑紀錄", "HPC", "Linux", "實驗紀錄"]
+category: "計算環境"
+tags:
+  - "HPC"
+  - "Linux"
+  - "台灣杉三號"
+  - "實驗紀錄"
+draft: false
 ---
 
 剛開始準備進行 DFT 與 VASP 計算時，第一個面臨的挑戰往往不是複雜的量子化學公式，而是如何搞定與超級電腦的連線！由於許多實驗室慣用的 MobaXterm 只有 Windows 版本，Mac 使用者通常需要尋找替代方案。
