@@ -18,7 +18,14 @@ const {
 	tags = [],
 } = Astro.props;
 
-const hasMetadata = Boolean(category || tags.length > 0);
+const displayCategory = category || '未分類';
+const visibleTags = tags.filter(Boolean);
+const hasMetadata = Boolean(displayCategory || visibleTags.length > 0);
+
+const getCategoryUrl = (categoryName: string) =>
+	`/categories/${encodeURIComponent(categoryName)}/`;
+
+const getTagUrl = (tag: string) => `/tags/${encodeURIComponent(tag)}/`;
 ---
 
 <!doctype html>
@@ -98,6 +105,10 @@ const hasMetadata = Boolean(category || tags.length > 0);
 				font-size: 0.82rem;
 				line-height: 1;
 				padding: 7px 10px;
+				text-decoration: none;
+				transition:
+					background-color 0.2s ease,
+					color 0.2s ease;
 			}
 
 			.category {
@@ -105,9 +116,19 @@ const hasMetadata = Boolean(category || tags.length > 0);
 				color: #fff;
 			}
 
+			.category:hover {
+				background: #333;
+				color: #fff;
+			}
+
 			.tag {
 				background: #f3f4f6;
 				color: #444;
+			}
+
+			.tag:hover {
+				background: #e5e7eb;
+				color: #111;
 			}
 
 			hr {
@@ -163,13 +184,18 @@ const hasMetadata = Boolean(category || tags.length > 0);
 						{
 							hasMetadata && (
 								<div class="post-meta">
-									<span class="category">
-										{category}
-									</span>
+									<a
+										href={getCategoryUrl(displayCategory)}
+										class="category"
+									>
+										{displayCategory}
+									</a>
 
 									{
-										tags.map((tag) => (
-											<span class="tag">{tag}</span>
+										visibleTags.map((tag) => (
+											<a href={getTagUrl(tag)} class="tag">
+												{tag}
+											</a>
 										))
 									}
 								</div>

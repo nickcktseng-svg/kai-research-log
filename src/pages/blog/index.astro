@@ -7,9 +7,14 @@ import FormattedDate from '../../components/FormattedDate.astro';
 import Header from '../../components/Header.astro';
 import { SITE_DESCRIPTION, SITE_TITLE } from '../../consts';
 
-const posts = (await getCollection('blog')).sort(
+const posts = (await getCollection('blog', ({ data }) => !data.draft)).sort(
 	(a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf(),
 );
+
+const getCategoryUrl = (category: string) =>
+	`/categories/${encodeURIComponent(category)}/`;
+
+const getTagUrl = (tag: string) => `/tags/${encodeURIComponent(tag)}/`;
 ---
 
 <!doctype html>
@@ -93,6 +98,11 @@ const posts = (await getCollection('blog')).sort(
 				box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 			}
 
+			.post-link {
+				display: block;
+				color: inherit;
+			}
+
 			.title {
 				margin: 0;
 				color: #111;
@@ -130,12 +140,22 @@ const posts = (await getCollection('blog')).sort(
 				color: #fff;
 			}
 
+			.category:hover {
+				background: #333;
+				color: #fff;
+			}
+
 			.tag {
 				background: #f3f4f6;
 				color: #444;
 			}
 
-			ul li a:hover .title {
+			.tag:hover {
+				background: #e5e7eb;
+				color: #111;
+			}
+
+			.post-link:hover .title {
 				color: #666;
 			}
 
@@ -191,6 +211,8 @@ const posts = (await getCollection('blog')).sort(
 							const month = date.getMonth() + 1;
 							const day = date.getDate();
 							const year = date.getFullYear();
+							const category = post.data.category || '未分類';
+							const tags = post.data.tags ?? [];
 
 							const dateFormats = `
 								${year}-${month.toString().padStart(2, '0')}-${day
@@ -205,15 +227,15 @@ const posts = (await getCollection('blog')).sort(
 							const searchData = `
 								${post.data.title}
 								${post.data.description}
-								${post.data.category}
-								${post.data.tags.join(' ')}
+								${category}
+								${tags.join(' ')}
 								${dateFormats}
 								${date.toDateString()}
 							`.toLowerCase();
 
 							return (
 								<li class="post-item" data-search={searchData}>
-									<a href={`/blog/${post.id}/`}>
+									<a href={`/blog/${post.id}/`} class="post-link">
 										{
 											post.data.heroImage && (
 												<Image
@@ -230,19 +252,24 @@ const posts = (await getCollection('blog')).sort(
 										<p class="date">
 											<FormattedDate date={post.data.pubDate} />
 										</p>
-
-										<div class="post-meta">
-											<span class="category">
-												{post.data.category}
-											</span>
-
-											{
-												post.data.tags.map((tag) => (
-													<span class="tag">{tag}</span>
-												))
-											}
-										</div>
 									</a>
+
+									<div class="post-meta">
+										<a
+											href={getCategoryUrl(category)}
+											class="category"
+										>
+											{category}
+										</a>
+
+										{
+											tags.map((tag) => (
+												<a href={getTagUrl(tag)} class="tag">
+													{tag}
+												</a>
+											))
+										}
+									</div>
 								</li>
 							);
 						})

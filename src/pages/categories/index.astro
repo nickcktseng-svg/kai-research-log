@@ -1,0 +1,139 @@
+---
+import { getCollection } from 'astro:content';
+import BaseHead from '../../components/BaseHead.astro';
+import Footer from '../../components/Footer.astro';
+import Header from '../../components/Header.astro';
+import { SITE_DESCRIPTION, SITE_TITLE } from '../../consts';
+
+const posts = await getCollection('blog', ({ data }) => !data.draft);
+
+const categoryCounts = new Map<string, number>();
+
+posts.forEach((post) => {
+	const category = post.data.category || '未分類';
+	categoryCounts.set(category, (categoryCounts.get(category) || 0) + 1);
+});
+
+const categories = Array.from(categoryCounts.entries())
+	.map(([name, count]) => ({ name, count }))
+	.sort((a, b) => a.name.localeCompare(b.name, 'zh-Hant'));
+---
+
+<!doctype html>
+<html lang="zh-TW">
+	<head>
+		<BaseHead title={`文章分類 | ${SITE_TITLE}`} description={SITE_DESCRIPTION} />
+
+		<style>
+			main {
+				width: 100%;
+				max-width: 1000px;
+				margin: 0 auto;
+				padding: 40px 20px;
+			}
+
+			.page-title {
+				font-size: 3.5rem;
+				font-weight: 800;
+				margin-bottom: 10px;
+				letter-spacing: -0.02em;
+				color: #111;
+			}
+
+			.page-desc {
+				color: #666;
+				font-size: 1.1rem;
+				margin-bottom: 40px;
+			}
+
+			.category-list {
+				display: grid;
+				grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+				gap: 20px;
+				list-style: none;
+				padding: 0;
+				margin: 0;
+			}
+
+			.category-card {
+				display: block;
+				padding: 24px;
+				border: 1px solid #eee;
+				border-radius: 16px;
+				background: #fff;
+				color: inherit;
+				text-decoration: none;
+				box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+				transition:
+					transform 0.2s ease,
+					box-shadow 0.2s ease;
+			}
+
+			.category-card:hover {
+				transform: translateY(-4px);
+				box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+			}
+
+			.category-name {
+				margin: 0 0 10px;
+				font-size: 1.25rem;
+				font-weight: 700;
+				color: #111;
+			}
+
+			.category-count {
+				color: #666;
+				font-size: 0.95rem;
+			}
+
+			.back-link {
+				display: inline-block;
+				margin-top: 40px;
+				color: #555;
+				text-decoration: none;
+			}
+
+			.back-link:hover {
+				color: #111;
+				text-decoration: underline;
+			}
+
+			@media (max-width: 720px) {
+				.page-title {
+					font-size: 2.5rem;
+				}
+			}
+		</style>
+	</head>
+
+	<body>
+		<Header />
+
+		<main>
+			<h1 class="page-title">文章分類</h1>
+			<p class="page-desc">依照研究主題整理所有文章。</p>
+
+			<ul class="category-list">
+				{
+					categories.map((category) => (
+						<li>
+							<a
+								href={`/categories/${encodeURIComponent(category.name)}/`}
+								class="category-card"
+							>
+								<h2 class="category-name">{category.name}</h2>
+								<span class="category-count">
+									{category.count} 篇文章
+								</span>
+							</a>
+						</li>
+					))
+				}
+			</ul>
+
+			<a href="/blog" class="back-link">← 回到學習日誌</a>
+		</main>
+
+		<Footer />
+	</body>
+</html>
