@@ -1,0 +1,226 @@
+---
+import BaseHead from '../components/BaseHead.astro';
+import Footer from '../components/Footer.astro';
+import Header from '../components/Header.astro';
+import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
+import reports from '../data/weekly-reports.json';
+
+const sortedReports = [...reports].sort((a, b) => b.week.localeCompare(a.week));
+
+const reportSections = [
+	{ key: 'completed', title: '完成事項' },
+	{ key: 'progress', title: '研究進度' },
+	{ key: 'problems', title: '遇到的問題' },
+	{ key: 'solutions', title: '解決方式' },
+	{ key: 'unfinished', title: '尚未完成' },
+	{ key: 'next', title: '下週目標' },
+] as const;
+---
+
+<!doctype html>
+<html lang="zh-TW">
+	<head>
+		<BaseHead title={`研究週報 | ${SITE_TITLE}`} description={SITE_DESCRIPTION} />
+
+		<style>
+			main {
+				width: 100%;
+				max-width: 1000px;
+				margin: 0 auto;
+				padding: 40px 20px;
+			}
+
+			.page-title {
+				font-size: 3.5rem;
+				font-weight: 800;
+				margin-bottom: 10px;
+				letter-spacing: -0.02em;
+				color: #111;
+			}
+
+			.page-desc {
+				color: #666;
+				font-size: 1.1rem;
+				margin-bottom: 40px;
+				max-width: 720px;
+			}
+
+			.report-list {
+				display: grid;
+				gap: 24px;
+				list-style: none;
+				margin: 0;
+				padding: 0;
+			}
+
+			.report-card {
+				padding: 28px;
+				border: 1px solid #eee;
+				border-radius: 16px;
+				background: #fff;
+				box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+			}
+
+			.report-header {
+				display: flex;
+				justify-content: space-between;
+				gap: 20px;
+				margin-bottom: 20px;
+			}
+
+			.report-title {
+				margin: 0 0 10px;
+				color: #111;
+				font-size: 1.6rem;
+				line-height: 1.4;
+			}
+
+			.report-date {
+				margin: 0;
+				color: #777;
+				font-size: 0.95rem;
+			}
+
+			.week-pill {
+				align-self: flex-start;
+				border-radius: 999px;
+				background: #111;
+				color: #fff;
+				padding: 8px 12px;
+				font-size: 0.85rem;
+				font-weight: 700;
+				line-height: 1;
+			}
+
+			.summary {
+				margin: 0 0 28px;
+				color: #444;
+				font-size: 1rem;
+				line-height: 1.8;
+			}
+
+			.report-sections {
+				display: grid;
+				grid-template-columns: repeat(2, minmax(0, 1fr));
+				gap: 24px 28px;
+				margin-bottom: 24px;
+			}
+
+			.report-section-title {
+				margin: 0 0 10px;
+				color: #111;
+				font-size: 1rem;
+			}
+
+			.report-section-list {
+				margin: 0;
+				padding-left: 1.2rem;
+				color: #555;
+				line-height: 1.75;
+			}
+
+			.report-section-list li + li {
+				margin-top: 6px;
+			}
+
+			.meta-row {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 8px;
+				padding-top: 20px;
+				border-top: 1px solid #eee;
+			}
+
+			.pill {
+				display: inline-flex;
+				align-items: center;
+				border-radius: 999px;
+				background: #f3f4f6;
+				color: #444;
+				padding: 7px 10px;
+				font-size: 0.8rem;
+				font-weight: 600;
+				line-height: 1;
+			}
+
+			@media (max-width: 720px) {
+				.page-title {
+					font-size: 2.5rem;
+				}
+
+				.report-card {
+					padding: 22px;
+				}
+
+				.report-header {
+					flex-direction: column;
+				}
+
+				.report-sections {
+					grid-template-columns: 1fr;
+				}
+			}
+		</style>
+	</head>
+
+	<body>
+		<Header />
+
+		<main>
+			<h1 class="page-title">研究週報</h1>
+			<p class="page-desc">
+				每週整理完成事項、研究進度、遇到的問題與下一步目標。
+			</p>
+
+			<ul class="report-list">
+				{
+					sortedReports.map((report) => (
+						<li>
+							<article class="report-card">
+								<header class="report-header">
+									<div>
+										<h2 class="report-title">
+											{report.title}
+										</h2>
+										<p class="report-date">
+											{report.dateRange}
+										</p>
+									</div>
+									<span class="week-pill">{report.week}</span>
+								</header>
+
+								<p class="summary">{report.summary}</p>
+
+								<div class="report-sections">
+									{reportSections.map((section) => (
+										<section>
+											<h3 class="report-section-title">
+												{section.title}
+											</h3>
+											<ul class="report-section-list">
+												{report[section.key].map((item) => (
+													<li>{item}</li>
+												))}
+											</ul>
+										</section>
+									))}
+								</div>
+
+								<div class="meta-row">
+									{report.categories.map((category) => (
+										<span class="pill">{category}</span>
+									))}
+									{report.tags.map((tag) => (
+										<span class="pill">{tag}</span>
+									))}
+								</div>
+							</article>
+						</li>
+					))
+				}
+			</ul>
+		</main>
+
+		<Footer />
+	</body>
+</html>
