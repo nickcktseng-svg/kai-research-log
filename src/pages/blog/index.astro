@@ -44,6 +44,36 @@ const getTagUrl = (tag: string) => `/tags/${encodeURIComponent(tag)}/`;
 				margin-bottom: 40px;
 			}
 
+			.archive-links {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 12px;
+				margin-bottom: 32px;
+			}
+
+			.archive-link {
+				display: inline-flex;
+				align-items: center;
+				padding: 10px 16px;
+				border: 1px solid #e5e7eb;
+				border-radius: 999px;
+				background: #fff;
+				color: #333;
+				font-size: 0.95rem;
+				font-weight: 600;
+				text-decoration: none;
+				transition:
+					background-color 0.2s ease,
+					border-color 0.2s ease,
+					transform 0.2s ease;
+			}
+
+			.archive-link:hover {
+				background: #f3f4f6;
+				border-color: #d1d5db;
+				transform: translateY(-2px);
+			}
+
 			.search-container {
 				margin-bottom: 40px;
 			}
@@ -190,6 +220,11 @@ const getTagUrl = (tag: string) => `/tags/${encodeURIComponent(tag)}/`;
 				<p class="page-desc">
 					記錄每一次的學習進度、實作過程與反思。
 				</p>
+
+				<div class="archive-links">
+					<a href="/categories/" class="archive-link">所有分類</a>
+					<a href="/tags/" class="archive-link">所有標籤</a>
+				</div>
 
 				<div class="search-container">
 					<input
