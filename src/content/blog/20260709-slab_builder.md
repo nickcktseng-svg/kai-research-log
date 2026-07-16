@@ -2,6 +2,14 @@
 title: "從零打造計算化學工具：Slab Builder Pro 開發全紀錄"
 description: "記錄如何利用 Python、ASE 與 Tkinter，一步步開發出具備 3D 視覺化與多分頁系統的 Slab 表面結構產生器。"
 pubDate: "2026-07-09"
+category: "工具開發"
+tags:
+  - "Slab Builder"
+  - "Python"
+  - "ASE"
+  - "VASP"
+  - "工具開發"
+draft: false
 ---
 
 ## 📑 章節導航
