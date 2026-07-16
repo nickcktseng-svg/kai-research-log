@@ -1,0 +1,74 @@
+[
+  {
+    "id": "task-20260716-01",
+    "title": "確認 Blog 分類與標籤系統",
+    "description": "檢查 /blog、/categories、/tags 是否能正常顯示與篩選。",
+    "type": "daily",
+    "category": "網站開發",
+    "tags": ["Astro", "Blog", "分類系統"],
+    "status": "done",
+    "priority": "medium",
+    "date": "2026-07-16",
+    "week": "2026-W29"
+  },
+  {
+    "id": "task-20260716-02",
+    "title": "整理 Slab Builder 開發紀錄",
+    "description": "將 Slab Builder 的功能、問題與除錯過程整理成後續文章素材。",
+    "type": "daily",
+    "category": "工具開發",
+    "tags": ["Slab Builder", "ASE", "VASP"],
+    "status": "doing",
+    "priority": "high",
+    "date": "2026-07-16",
+    "week": "2026-W29"
+  },
+  {
+    "id": "task-20260716-03",
+    "title": "檢查 VASP 筆記分類",
+    "description": "確認計算化學相關文章的分類與標籤是否方便後續查找。",
+    "type": "daily",
+    "category": "計算化學",
+    "tags": ["VASP", "筆記整理", "Blog"],
+    "status": "todo",
+    "priority": "medium",
+    "date": "2026-07-16",
+    "week": "2026-W29"
+  },
+  {
+    "id": "task-20260715-01",
+    "title": "整理 HPC 環境設定重點",
+    "description": "將常用 Linux 與 HPC 操作筆記整理成可重複查閱的清單。",
+    "type": "daily",
+    "category": "計算環境",
+    "tags": ["HPC", "Linux", "研究流程"],
+    "status": "done",
+    "priority": "low",
+    "date": "2026-07-15",
+    "week": "2026-W29"
+  },
+  {
+    "id": "task-2026w29-01",
+    "title": "建立研究管理系統第一版",
+    "description": "完成每日任務、每週任務與週報頁面。",
+    "type": "weekly",
+    "category": "網站開發",
+    "tags": ["Astro", "任務管理", "週報"],
+    "status": "todo",
+    "priority": "high",
+    "date": "2026-07-16",
+    "week": "2026-W29"
+  },
+  {
+    "id": "task-2026w29-02",
+    "title": "建立研究素材整理節奏",
+    "description": "每週回顧文章草稿、工具開發紀錄與文獻整理狀態。",
+    "type": "weekly",
+    "category": "研究整理",
+    "tags": ["研究整理", "週報", "工作流程"],
+    "status": "doing",
+    "priority": "medium",
+    "date": "2026-07-16",
+    "week": "2026-W29"
+  }
+]
