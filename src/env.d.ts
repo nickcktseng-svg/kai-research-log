@@ -5,5 +5,6 @@
 declare namespace Cloudflare {
 	interface Env {
 		DB: D1Database;
+		TASK_API_TOKEN?: string;
 	}
 }
