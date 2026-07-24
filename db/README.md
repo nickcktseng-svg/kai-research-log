@@ -24,7 +24,7 @@ npx wrangler d1 create kai-research-db
 
 4. 將 Cloudflare 回傳的 `database_id` 填入 `wrangler.jsonc`
 
-請把下列 placeholder 換成實際 ID：
+如果設定檔仍保留 placeholder，請把下列文字換成實際 ID：
 
 ```text
 REPLACE_WITH_CLOUDFLARE_D1_DATABASE_ID
@@ -126,13 +126,80 @@ npm run preview
 }
 ```
 
+13. 設定受保護任務 API token
+
+受保護的任務寫入 API 需要 `TASK_API_TOKEN`，請用 Cloudflare secret 設定，不要寫進 repository：
+
+```bash
+npx wrangler secret put TASK_API_TOKEN
+```
+
+本機開發時可以在 `.dev.vars` 放測試 token；這個檔案已被 `.gitignore` 忽略：
+
+```text
+TASK_API_TOKEN="replace-with-local-test-token"
+```
+
+14. 測試受保護任務 API
+
+以下 API 都需要：
+
+```text
+Authorization: Bearer <TASK_API_TOKEN>
+```
+
+新增任務：
+
+```bash
+curl -X POST http://localhost:8787/api/admin/tasks \
+  -H "Authorization: Bearer $TASK_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "測試 D1 任務寫入",
+    "description": "確認受保護 API 可以新增任務。",
+    "type": "daily",
+    "category": "網站開發",
+    "status": "todo",
+    "priority": "medium",
+    "date": "2026-07-24",
+    "week": "2026-W30",
+    "tags": ["D1", "API"]
+  }'
+```
+
+更新任務：
+
+```bash
+curl -X PATCH http://localhost:8787/api/admin/tasks/<task-id> \
+  -H "Authorization: Bearer $TASK_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "status": "doing",
+    "priority": "high",
+    "tags": ["D1", "API", "任務管理"]
+  }'
+```
+
+完成任務：
+
+```bash
+curl -X POST http://localhost:8787/api/admin/tasks/<task-id>/complete \
+  -H "Authorization: Bearer $TASK_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{}'
+```
+
+如果尚未設定 `TASK_API_TOKEN`，受保護 API 會回傳 `auth_unconfigured`。如果 token 錯誤或缺少 `Authorization` header，會回傳 `unauthorized`。
+
 ## 目前限制
 
 - `tasks.json` 與 `weekly-reports.json` 目前仍是正式頁面的資料來源。
 - D1 尚未取代 `tasks.json` 與 `weekly-reports.json`。
-- 目前只新增只讀 `/api/health`、`/api/db/tasks` 與 `/api/db/weekly-reports`，不會透過網站 API 寫入、刪除或修改任何資料。
+- `/tasks`、`/weekly` 與 `/dashboard` 目前仍使用 JSON，不會因受保護任務 API 而自動改用 D1。
+- 目前新增的寫入能力只限 `/api/admin/tasks`、`/api/admin/tasks/<task-id>` 與 `/api/admin/tasks/<task-id>/complete`，而且必須帶 `TASK_API_TOKEN`。
+- 目前尚未建立刪除 API、登入頁、後台編輯介面或公開 CRUD UI。
 - `db/seed.sql` 是人工/部署流程使用的資料匯入檔，不是公開寫入 API。
-- 下一階段才會建立受保護的 CRUD API，並評估是否將正式頁面資料來源切換到 D1。
+- 下一階段才會評估是否將正式頁面資料來源切換到 D1。
 
 ## 注意事項
 

@@ -20,6 +20,30 @@ export interface TaskWithTags extends DatabaseTask {
 	tags: string[];
 }
 
+export interface CreateDatabaseTaskInput {
+	title: string;
+	description: string;
+	type: TaskType;
+	category: string;
+	status: TaskStatus;
+	priority: TaskPriority;
+	task_date: string | null;
+	week: string | null;
+	tags: string[];
+}
+
+export interface UpdateDatabaseTaskInput {
+	title?: string;
+	description?: string;
+	type?: TaskType;
+	category?: string;
+	status?: TaskStatus;
+	priority?: TaskPriority;
+	task_date?: string | null;
+	week?: string | null;
+	tags?: string[];
+}
+
 export interface DatabaseWeeklyReport {
 	id: string;
 	week: string;
