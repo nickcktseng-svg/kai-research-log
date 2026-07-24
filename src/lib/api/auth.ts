@@ -1,4 +1,5 @@
 import { authUnconfigured, unauthorized } from '../database/http';
+import { readAuthSession } from '../auth/session';
 
 const extractBearerToken = (request: Request): string | null => {
 	const authorization = request.headers.get('authorization');
@@ -8,7 +9,7 @@ const extractBearerToken = (request: Request): string | null => {
 	return match?.[1]?.trim() || null;
 };
 
-const timingSafeTokenMatch = async (
+export const timingSafeTokenMatch = async (
 	providedToken: string,
 	expectedToken: string,
 ): Promise<boolean> => {
@@ -36,4 +37,32 @@ export const requireTaskApiToken = async (
 
 	const isAuthorized = await timingSafeTokenMatch(providedToken, expectedToken);
 	return isAuthorized ? null : unauthorized();
+};
+
+export const requireOwnerTaskAccess = async (
+	request: Request,
+	{
+		sessionSecret,
+		taskApiToken,
+	}: {
+		sessionSecret: string | undefined;
+		taskApiToken: string | undefined;
+	},
+): Promise<Response | null> => {
+	const session = await readAuthSession(request, sessionSecret);
+	if (session?.role === 'owner') return null;
+
+	if (taskApiToken) {
+		const providedToken = extractBearerToken(request);
+		if (providedToken) {
+			const isAuthorized = await timingSafeTokenMatch(providedToken, taskApiToken);
+			if (isAuthorized) return null;
+		}
+	}
+
+	if (!sessionSecret && !taskApiToken) {
+		return authUnconfigured();
+	}
+
+	return unauthorized();
 };

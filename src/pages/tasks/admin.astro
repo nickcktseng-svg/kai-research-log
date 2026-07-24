@@ -1,0 +1,1012 @@
+---
+import BaseHead from '../../components/BaseHead.astro';
+import Footer from '../../components/Footer.astro';
+import Header from '../../components/Header.astro';
+import { SITE_DESCRIPTION, SITE_TITLE } from '../../consts';
+import { readAuthSession } from '../../lib/auth/session';
+import { env } from 'cloudflare:workers';
+
+export const prerender = false;
+
+const session = await readAuthSession(Astro.request, env.SESSION_SECRET);
+if (session?.role !== 'owner') {
+	return Astro.redirect('/login?next=/tasks/admin/');
+}
+---
+
+<!doctype html>
+<html lang="zh-TW">
+	<head>
+		<BaseHead title={`任務管理 | ${SITE_TITLE}`} description={SITE_DESCRIPTION} />
+
+		<style>
+			main {
+				width: 100%;
+				max-width: 1000px;
+				margin: 0 auto;
+				padding: 40px 20px;
+			}
+
+			.page-kicker {
+				margin: 0 0 10px;
+				color: #777;
+				font-size: 0.95rem;
+				font-weight: 700;
+			}
+
+			.page-title {
+				margin: 0 0 10px;
+				color: #111;
+				font-size: 3.2rem;
+				font-weight: 800;
+				letter-spacing: 0;
+			}
+
+			.page-desc {
+				max-width: 720px;
+				margin: 0 0 26px;
+				color: #666;
+				font-size: 1.05rem;
+				line-height: 1.8;
+			}
+
+			.page-actions {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 12px;
+				margin-bottom: 34px;
+			}
+
+			.text-link,
+			.action-link,
+			.button {
+				border: 1px solid #e5e7eb;
+				border-radius: 999px;
+				background: #fff;
+				color: #333;
+				font: inherit;
+				font-size: 0.95rem;
+				font-weight: 700;
+				text-decoration: none;
+				cursor: pointer;
+				transition:
+					background-color 0.2s ease,
+					border-color 0.2s ease,
+					color 0.2s ease,
+					transform 0.2s ease;
+			}
+
+			.action-link,
+			.button {
+				display: inline-flex;
+				align-items: center;
+				justify-content: center;
+				min-height: 42px;
+				padding: 10px 16px;
+			}
+
+			.text-link {
+				display: inline;
+				border: 0;
+				border-radius: 0;
+				padding: 0;
+				color: #111;
+				text-decoration: underline;
+				text-underline-offset: 4px;
+			}
+
+			.action-link:hover,
+			.button:hover {
+				background: #f3f4f6;
+				border-color: #d1d5db;
+				transform: translateY(-2px);
+			}
+
+			.button-primary {
+				background: #111;
+				border-color: #111;
+				color: #fff;
+			}
+
+			.button-primary:hover {
+				background: #333;
+				border-color: #333;
+			}
+
+			.button:disabled {
+				cursor: not-allowed;
+				opacity: 0.55;
+				transform: none;
+			}
+
+			.admin-grid {
+				display: grid;
+				grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.35fr);
+				gap: 24px;
+				align-items: start;
+			}
+
+			.panel {
+				border: 1px solid #eee;
+				border-radius: 8px;
+				background: #fff;
+				box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+			}
+
+			.panel-header,
+			.panel-body {
+				padding: 22px;
+			}
+
+			.panel-header {
+				border-bottom: 1px solid #eee;
+			}
+
+			.panel-title {
+				margin: 0;
+				color: #111;
+				font-size: 1.15rem;
+			}
+
+			.panel-desc,
+			.status-text {
+				margin: 8px 0 0;
+				color: #666;
+				font-size: 0.92rem;
+				line-height: 1.65;
+			}
+
+			.form-grid {
+				display: grid;
+				gap: 16px;
+			}
+
+			.form-row {
+				display: grid;
+				grid-template-columns: 1fr 1fr;
+				gap: 14px;
+			}
+
+			.field {
+				display: grid;
+				gap: 8px;
+			}
+
+			fieldset.field {
+				min-width: 0;
+				margin: 0;
+				padding: 0;
+				border: 0;
+			}
+
+			.field[hidden] {
+				display: none;
+			}
+
+			label,
+			.legend {
+				color: #333;
+				font-size: 0.9rem;
+				font-weight: 700;
+			}
+
+			input,
+			select,
+			textarea {
+				width: 100%;
+				border: 1px solid #e5e7eb;
+				border-radius: 8px;
+				background: #fff;
+				color: #111;
+				font: inherit;
+				font-size: 0.95rem;
+				line-height: 1.5;
+			}
+
+			input,
+			select {
+				min-height: 42px;
+				padding: 9px 12px;
+			}
+
+			textarea {
+				min-height: 114px;
+				padding: 11px 12px;
+				resize: vertical;
+			}
+
+			input:focus,
+			select:focus,
+			textarea:focus {
+				outline: 2px solid #111;
+				outline-offset: 2px;
+				border-color: #111;
+			}
+
+			.segmented {
+				display: grid;
+				grid-template-columns: repeat(2, 1fr);
+				gap: 8px;
+			}
+
+			.segmented label {
+				display: inline-flex;
+				align-items: center;
+				justify-content: center;
+				min-height: 42px;
+				border: 1px solid #e5e7eb;
+				border-radius: 999px;
+				background: #fff;
+				color: #333;
+				cursor: pointer;
+			}
+
+			.segmented input {
+				position: absolute;
+				width: 1px;
+				height: 1px;
+				margin: -1px;
+				overflow: hidden;
+				clip: rect(0, 0, 0, 0);
+			}
+
+			.segmented label:has(input:checked) {
+				background: #111;
+				border-color: #111;
+				color: #fff;
+			}
+
+			.status-message {
+				margin: 0 0 18px;
+				padding: 12px 14px;
+				border: 1px solid #e5e7eb;
+				border-radius: 8px;
+				background: #f9fafb;
+				color: #444;
+				font-size: 0.92rem;
+				line-height: 1.6;
+			}
+
+			.status-message.success {
+				border-color: #c7d7c7;
+				background: #f5faf5;
+				color: #255525;
+			}
+
+			.status-message.error {
+				border-color: #e5c7c7;
+				background: #fff7f7;
+				color: #7a2626;
+			}
+
+			.task-summary {
+				display: grid;
+				grid-template-columns: repeat(3, 1fr);
+				gap: 10px;
+				margin-bottom: 18px;
+			}
+
+			.summary-item {
+				border: 1px solid #eee;
+				border-radius: 8px;
+				padding: 12px;
+				background: #fafafa;
+			}
+
+			.summary-number {
+				display: block;
+				color: #111;
+				font-size: 1.45rem;
+				font-weight: 800;
+			}
+
+			.summary-label {
+				color: #666;
+				font-size: 0.82rem;
+			}
+
+			.task-list {
+				display: grid;
+				gap: 14px;
+				margin: 0;
+				padding: 0;
+				list-style: none;
+			}
+
+			.task-card {
+				display: grid;
+				gap: 12px;
+				border: 1px solid #eee;
+				border-radius: 8px;
+				padding: 16px;
+				background: #fff;
+			}
+
+			.task-card.done {
+				background: #fafafa;
+			}
+
+			.task-card-header {
+				display: flex;
+				align-items: flex-start;
+				justify-content: space-between;
+				gap: 12px;
+			}
+
+			.task-title {
+				margin: 0;
+				color: #111;
+				font-size: 1rem;
+				line-height: 1.5;
+			}
+
+			.task-description {
+				margin: 0;
+				color: #555;
+				font-size: 0.92rem;
+				line-height: 1.7;
+			}
+
+			.pill-list {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 8px;
+			}
+
+			.pill {
+				display: inline-flex;
+				align-items: center;
+				border-radius: 999px;
+				padding: 7px 10px;
+				font-size: 0.78rem;
+				font-weight: 700;
+				line-height: 1;
+			}
+
+			.pill-dark {
+				background: #111;
+				color: #fff;
+			}
+
+			.pill-light {
+				background: #f3f4f6;
+				color: #444;
+			}
+
+			.task-empty {
+				margin: 0;
+				color: #666;
+				line-height: 1.7;
+			}
+
+			@media (max-width: 860px) {
+				.admin-grid {
+					grid-template-columns: 1fr;
+				}
+			}
+
+			@media (max-width: 620px) {
+				main {
+					padding: 32px 18px;
+				}
+
+				.page-title {
+					font-size: 2.35rem;
+				}
+
+				.form-row,
+				.task-summary {
+					grid-template-columns: 1fr;
+				}
+
+				.task-card-header {
+					flex-direction: column;
+				}
+			}
+		</style>
+	</head>
+
+	<body>
+		<Header />
+
+		<main>
+			<p class="page-kicker">Tasks Admin</p>
+			<h1 class="page-title">任務管理</h1>
+			<p class="page-desc">
+				使用本人登入狀態新增每日與每週任務，並將已完成的項目同步回 D1 任務資料庫。
+			</p>
+
+			<div class="page-actions">
+				<a href="/tasks" class="action-link">返回任務頁</a>
+				<button type="button" class="button" id="refreshTasksButton">重新整理</button>
+			</div>
+
+			<p class="status-message" id="statusMessage" aria-live="polite">
+				載入任務中。
+			</p>
+
+			<div class="admin-grid">
+				<section class="panel" aria-labelledby="accountTitle">
+					<div class="panel-header">
+						<h2 class="panel-title" id="accountTitle">登入狀態</h2>
+						<p class="panel-desc">
+							目前以本人帳號登入，可以新增與完成任務。
+						</p>
+					</div>
+					<div class="panel-body">
+						<p class="status-text" id="accountStatus">
+							目前身分：{session.username}（本人）
+						</p>
+						<div class="page-actions">
+							<a href="/login?next=/tasks/admin/" class="action-link">切換帳號</a>
+							<button type="button" class="button" id="logoutButton">
+								登出
+							</button>
+						</div>
+					</div>
+				</section>
+
+				<section class="panel" aria-labelledby="createTaskTitle">
+					<div class="panel-header">
+						<h2 class="panel-title" id="createTaskTitle">新增任務</h2>
+						<p class="panel-desc">
+							送出後會寫入 D1，公開任務頁重新載入後即可看到。
+						</p>
+					</div>
+					<div class="panel-body">
+						<form id="taskForm" class="form-grid">
+							<fieldset class="field">
+								<legend class="legend">任務類型</legend>
+								<div class="segmented">
+									<label>
+										<input type="radio" name="type" value="daily" checked />
+										每日
+									</label>
+									<label>
+										<input type="radio" name="type" value="weekly" />
+										每週
+									</label>
+								</div>
+							</fieldset>
+
+							<div class="field">
+								<label for="title">標題</label>
+								<input id="title" name="title" type="text" maxlength="160" required />
+							</div>
+
+							<div class="field">
+								<label for="description">描述</label>
+								<textarea id="description" name="description" maxlength="2000"></textarea>
+							</div>
+
+							<div class="form-row">
+								<div class="field">
+									<label for="category">分類</label>
+									<input
+										id="category"
+										name="category"
+										type="text"
+										maxlength="80"
+										value="未分類"
+									/>
+								</div>
+								<div class="field">
+									<label for="tags">標籤</label>
+									<input
+										id="tags"
+										name="tags"
+										type="text"
+										placeholder="VASP, HPC, 週報"
+									/>
+								</div>
+							</div>
+
+							<div class="form-row">
+								<div class="field">
+									<label for="status">狀態</label>
+									<select id="status" name="status">
+										<option value="todo">未開始</option>
+										<option value="doing">進行中</option>
+										<option value="done">已完成</option>
+									</select>
+								</div>
+								<div class="field">
+									<label for="priority">優先順序</label>
+									<select id="priority" name="priority">
+										<option value="medium">中</option>
+										<option value="high">高</option>
+										<option value="low">低</option>
+									</select>
+								</div>
+							</div>
+
+							<div class="form-row">
+								<div class="field" id="taskDateField">
+									<label for="taskDate">日期</label>
+									<input id="taskDate" name="taskDate" type="date" />
+								</div>
+								<div class="field" id="weekField" hidden>
+									<label for="week">週次</label>
+									<input id="week" name="week" type="text" maxlength="16" />
+								</div>
+							</div>
+
+							<button type="submit" class="button button-primary" id="createTaskButton">
+								新增任務
+							</button>
+						</form>
+					</div>
+				</section>
+
+				<section class="panel task-panel" aria-labelledby="taskListTitle">
+					<div class="panel-header">
+						<h2 class="panel-title" id="taskListTitle">D1 任務</h2>
+						<p class="panel-desc">
+							目前資料庫中的任務列表。
+						</p>
+					</div>
+					<div class="panel-body">
+						<div class="task-summary" aria-label="任務狀態摘要">
+							<div class="summary-item">
+								<span class="summary-number" id="todoCount">0</span>
+								<span class="summary-label">未開始</span>
+							</div>
+							<div class="summary-item">
+								<span class="summary-number" id="doingCount">0</span>
+								<span class="summary-label">進行中</span>
+							</div>
+							<div class="summary-item">
+								<span class="summary-number" id="doneCount">0</span>
+								<span class="summary-label">已完成</span>
+							</div>
+						</div>
+
+						<ul class="task-list" id="taskList"></ul>
+					</div>
+				</section>
+			</div>
+		</main>
+
+		<Footer />
+
+		<script>
+			const statusLabels = {
+				todo: '未開始',
+				doing: '進行中',
+				done: '已完成',
+			};
+
+			const priorityLabels = {
+				low: '低優先',
+				medium: '中優先',
+				high: '高優先',
+			};
+
+			const typeLabels = {
+				daily: '每日',
+				weekly: '每週',
+			};
+
+			const priorityOrder = {
+				high: 0,
+				medium: 1,
+				low: 2,
+			};
+
+			const refs = {
+				form: document.querySelector('#taskForm'),
+				accountStatus: document.querySelector('#accountStatus'),
+				logoutButton:
+					document.querySelector('#logoutButton'),
+				refreshTasksButton:
+					document.querySelector('#refreshTasksButton'),
+				statusMessage: document.querySelector('#statusMessage'),
+				taskList: document.querySelector('#taskList'),
+				todoCount: document.querySelector('#todoCount'),
+				doingCount: document.querySelector('#doingCount'),
+				doneCount: document.querySelector('#doneCount'),
+				taskDateField: document.querySelector('#taskDateField'),
+				weekField: document.querySelector('#weekField'),
+				taskDate: document.querySelector('#taskDate'),
+				week: document.querySelector('#week'),
+				createTaskButton:
+					document.querySelector('#createTaskButton'),
+			};
+
+			const requiredRefs = Object.values(refs);
+
+			if (requiredRefs.every(Boolean)) {
+				const form = refs.form;
+				const accountStatus = refs.accountStatus;
+				const logoutButton = refs.logoutButton;
+				const refreshTasksButton = refs.refreshTasksButton;
+				const statusMessage = refs.statusMessage;
+				const taskList = refs.taskList;
+				const todoCount = refs.todoCount;
+				const doingCount = refs.doingCount;
+				const doneCount = refs.doneCount;
+				const taskDateField = refs.taskDateField;
+				const weekField = refs.weekField;
+				const taskDate = refs.taskDate;
+				const week = refs.week;
+				const createTaskButton = refs.createTaskButton;
+
+				let tasks = [];
+
+				const setMessage = (message, tone = 'neutral') => {
+					statusMessage.textContent = message;
+					statusMessage.classList.toggle('success', tone === 'success');
+					statusMessage.classList.toggle('error', tone === 'error');
+				};
+
+				const formatDateInput = (date) => {
+					const localDate = new Date(
+						date.getTime() - date.getTimezoneOffset() * 60_000,
+					);
+					return localDate.toISOString().slice(0, 10);
+				};
+
+				const getIsoWeek = (date) => {
+					const utcDate = new Date(
+						Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()),
+					);
+					const dayNumber = utcDate.getUTCDay() || 7;
+					utcDate.setUTCDate(utcDate.getUTCDate() + 4 - dayNumber);
+					const yearStart = new Date(Date.UTC(utcDate.getUTCFullYear(), 0, 1));
+					const weekNumber = Math.ceil(
+						((utcDate.getTime() - yearStart.getTime()) / 86_400_000 + 1) / 7,
+					);
+
+					return `${utcDate.getUTCFullYear()}-W${String(weekNumber).padStart(2, '0')}`;
+				};
+
+				const selectedTaskType = () => {
+					const formData = new FormData(form);
+					return formData.get('type') === 'weekly' ? 'weekly' : 'daily';
+				};
+
+				const updateScheduleFields = () => {
+					const isWeekly = selectedTaskType() === 'weekly';
+					taskDateField.hidden = isWeekly;
+					weekField.hidden = !isWeekly;
+				};
+
+				const parseTags = (value) =>
+					String(value ?? '')
+						.split(',')
+						.map((tag) => tag.trim())
+						.filter((tag, index, tags) => tag && tags.indexOf(tag) === index);
+
+				const getErrorMessage = async (response) => {
+					let body = null;
+
+					try {
+						body = await response.json();
+					} catch {
+						body = null;
+					}
+
+					if (body && !body.ok) {
+						if (body.error === 'unauthorized') {
+							return '請先以本人帳號登入。';
+						}
+
+						if (body.error === 'auth_unconfigured') {
+							return 'Cloudflare 尚未設定登入 secrets。';
+						}
+
+						if (body.error === 'database_unavailable') {
+							return 'D1 資料庫目前不可用。';
+						}
+
+						if (body.message) return body.message;
+						return body.error;
+					}
+
+					return `請求失敗 (${response.status})。`;
+				};
+
+				async function apiFetch(url, init) {
+					const response = await fetch(url, {
+						...init,
+						credentials: init?.credentials ?? 'same-origin',
+						headers: {
+							...(init?.headers ?? {}),
+						},
+					});
+
+					if (!response.ok) {
+						throw new Error(await getErrorMessage(response));
+					}
+
+					return await response.json();
+				}
+
+				async function authorizedFetch(url, init) {
+					return apiFetch(url, {
+						...init,
+						credentials: 'same-origin',
+						headers: {
+							'content-type': 'application/json',
+							...(init.headers ?? {}),
+						},
+					});
+				}
+
+				const createPill = (text, variant = 'light') => {
+					const pill = document.createElement('span');
+					pill.className = `pill pill-${variant}`;
+					pill.textContent = text;
+					return pill;
+				};
+
+				const sortTasks = (taskList) =>
+					[...taskList].sort((a, b) => {
+						if (a.status !== b.status) {
+							const statusOrder = {
+								doing: 0,
+								todo: 1,
+								done: 2,
+							};
+							return statusOrder[a.status] - statusOrder[b.status];
+						}
+
+						const priorityDiff =
+							priorityOrder[a.priority] - priorityOrder[b.priority];
+						if (priorityDiff !== 0) return priorityDiff;
+
+						return `${b.task_date ?? ''}${b.week ?? ''}${b.id}`.localeCompare(
+							`${a.task_date ?? ''}${a.week ?? ''}${a.id}`,
+						);
+					});
+
+				const renderCounts = () => {
+					todoCount.textContent = String(
+						tasks.filter((task) => task.status === 'todo').length,
+					);
+					doingCount.textContent = String(
+						tasks.filter((task) => task.status === 'doing').length,
+					);
+					doneCount.textContent = String(
+						tasks.filter((task) => task.status === 'done').length,
+					);
+				};
+
+				const renderTasks = () => {
+					taskList.replaceChildren();
+					renderCounts();
+
+					if (tasks.length === 0) {
+						const emptyItem = document.createElement('li');
+						const empty = document.createElement('p');
+						empty.className = 'task-empty';
+						empty.textContent = '目前 D1 中沒有任務。';
+						emptyItem.append(empty);
+						taskList.append(emptyItem);
+						return;
+					}
+
+					for (const task of sortTasks(tasks)) {
+						const item = document.createElement('li');
+						const card = document.createElement('article');
+						card.className = `task-card ${task.status === 'done' ? 'done' : ''}`;
+
+						const header = document.createElement('div');
+						header.className = 'task-card-header';
+
+						const title = document.createElement('h3');
+						title.className = 'task-title';
+						title.textContent = task.title;
+
+						const completeButton = document.createElement('button');
+						completeButton.type = 'button';
+						completeButton.className = 'button';
+						completeButton.dataset.completeTask = task.id;
+						completeButton.disabled = task.status === 'done';
+						completeButton.textContent =
+							task.status === 'done' ? '已完成' : '完成';
+
+						header.append(title, completeButton);
+
+						const meta = document.createElement('div');
+						meta.className = 'pill-list';
+						meta.append(
+							createPill(statusLabels[task.status], 'dark'),
+							createPill(priorityLabels[task.priority]),
+							createPill(typeLabels[task.type]),
+							createPill(task.category || '未分類'),
+							createPill(
+								task.type === 'daily'
+									? (task.task_date ?? '未設定日期')
+									: (task.week ?? '未設定週次'),
+							),
+						);
+
+						const description = document.createElement('p');
+						description.className = 'task-description';
+						description.textContent = task.description || '沒有描述。';
+
+						const tags = document.createElement('div');
+						tags.className = 'pill-list';
+
+						if (task.tags.length > 0) {
+							for (const tag of task.tags) {
+								tags.append(createPill(tag));
+							}
+						}
+
+						card.append(header, meta, description);
+						if (task.tags.length > 0) card.append(tags);
+						item.append(card);
+						taskList.append(item);
+					}
+				};
+
+				const loadTasks = async () => {
+					setMessage('載入任務中。');
+					const data = await apiFetch('/api/db/tasks');
+
+					if (!data.ok) {
+						throw new Error(data.message ?? data.error);
+					}
+
+					tasks = data.tasks;
+					renderTasks();
+					setMessage('任務已更新。', 'success');
+				};
+
+				const loadSession = async () => {
+					const data = await apiFetch('/api/auth/session');
+					if (data.role !== 'owner') {
+						window.location.href = '/login?next=/tasks/admin/';
+						return false;
+					}
+
+					accountStatus.textContent = `目前身分：${data.username}（本人）`;
+					return true;
+				};
+
+				const createTask = async () => {
+					const formData = new FormData(form);
+					const type = selectedTaskType();
+					const payload = {
+						title: String(formData.get('title') ?? ''),
+						description: String(formData.get('description') ?? ''),
+						type,
+						category: String(formData.get('category') ?? ''),
+						status: String(formData.get('status') ?? 'todo'),
+						priority: String(formData.get('priority') ?? 'medium'),
+						task_date:
+							type === 'daily' ? String(formData.get('taskDate') ?? '') || null : null,
+						week:
+							type === 'weekly' ? String(formData.get('week') ?? '') || null : null,
+						tags: parseTags(formData.get('tags')),
+					};
+
+					createTaskButton.disabled = true;
+					createTaskButton.textContent = '新增中';
+
+					try {
+						const data = await authorizedFetch(
+							'/api/admin/tasks',
+							{
+								method: 'POST',
+								body: JSON.stringify(payload),
+							},
+						);
+
+						if (!data.ok) {
+							throw new Error(data.message ?? data.error);
+						}
+
+						form.reset();
+						taskDate.value = formatDateInput(new Date());
+						week.value = getIsoWeek(new Date());
+						updateScheduleFields();
+						await loadTasks();
+						setMessage('任務已新增。', 'success');
+					} finally {
+						createTaskButton.disabled = false;
+						createTaskButton.textContent = '新增任務';
+					}
+				};
+
+				const completeTask = async (taskId, button) => {
+					button.disabled = true;
+					button.textContent = '更新中';
+
+					try {
+						const data = await authorizedFetch(
+							`/api/admin/tasks/${encodeURIComponent(taskId)}/complete`,
+							{
+								method: 'POST',
+							},
+						);
+
+						if (!data.ok) {
+							throw new Error(data.message ?? data.error);
+						}
+
+						tasks = tasks.map((task) => (task.id === data.task.id ? data.task : task));
+						renderTasks();
+						setMessage('任務已標記完成。', 'success');
+					} finally {
+						button.disabled = false;
+						button.textContent = '完成';
+					}
+				};
+
+				taskDate.value = taskDate.value || formatDateInput(new Date());
+				week.value = week.value || getIsoWeek(new Date());
+				updateScheduleFields();
+
+				form.addEventListener('change', (event) => {
+					const target = event.target;
+					if (
+						target instanceof HTMLInputElement &&
+						target.name === 'type'
+					) {
+						updateScheduleFields();
+					}
+				});
+
+				form.addEventListener('submit', (event) => {
+					event.preventDefault();
+
+					createTask().catch((error) => {
+						const message = error instanceof Error ? error.message : '新增任務失敗。';
+						setMessage(message, 'error');
+					});
+				});
+
+				taskList.addEventListener('click', (event) => {
+					const target = event.target;
+					if (!(target instanceof Element)) return;
+
+					const button = target.closest('[data-complete-task]');
+					const taskId = button?.dataset.completeTask;
+					if (!button || !taskId) return;
+
+					completeTask(taskId, button).catch((error) => {
+						const message =
+							error instanceof Error ? error.message : '更新任務失敗。';
+						setMessage(message, 'error');
+					});
+				});
+
+				logoutButton.addEventListener('click', () => {
+					apiFetch('/api/auth/logout', {
+						method: 'POST',
+					})
+						.then(() => {
+							window.location.href = '/login';
+						})
+						.catch((error) => {
+							const message =
+								error instanceof Error ? error.message : '登出失敗。';
+							setMessage(message, 'error');
+						});
+				});
+
+				refreshTasksButton.addEventListener('click', () => {
+					loadTasks().catch((error) => {
+						const message =
+							error instanceof Error ? error.message : '載入任務失敗。';
+						setMessage(message, 'error');
+					});
+				});
+
+				loadSession()
+					.then((isOwner) => {
+						if (isOwner) return loadTasks();
+						return undefined;
+					})
+					.catch((error) => {
+						const message =
+							error instanceof Error ? error.message : '載入任務失敗。';
+						setMessage(message, 'error');
+					});
+			}
+		</script>
+	</body>
+</html>

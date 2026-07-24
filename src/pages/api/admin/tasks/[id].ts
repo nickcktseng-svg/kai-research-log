@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
-import { requireTaskApiToken } from '../../../../lib/api/auth';
+import { requireOwnerTaskAccess } from '../../../../lib/api/auth';
 import {
 	parseJsonObject,
 	parseTaskId,
@@ -18,7 +18,10 @@ import { updateDatabaseTask } from '../../../../lib/database/tasks';
 export const prerender = false;
 
 export const PATCH: APIRoute = async ({ params, request }) => {
-	const authError = await requireTaskApiToken(request, env.TASK_API_TOKEN);
+	const authError = await requireOwnerTaskAccess(request, {
+		sessionSecret: env.SESSION_SECRET,
+		taskApiToken: env.TASK_API_TOKEN,
+	});
 	if (authError) return authError;
 
 	const taskId = parseTaskId(params.id);
