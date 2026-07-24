@@ -11,7 +11,7 @@
 		{
 			"binding": "DB",
 			"database_name": "kai-research-db",
-			"database_id": "REPLACE_WITH_CLOUDFLARE_D1_DATABASE_ID"
+			"database_id": "4be96072-26e6-4478-8b93-5350e93e52ac"
 		}
 	]
 }
