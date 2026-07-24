@@ -3,6 +3,15 @@ import BaseHead from '../../components/BaseHead.astro';
 import Footer from '../../components/Footer.astro';
 import Header from '../../components/Header.astro';
 import { SITE_DESCRIPTION, SITE_TITLE } from '../../consts';
+import { readAuthSession } from '../../lib/auth/session';
+import { env } from 'cloudflare:workers';
+
+export const prerender = false;
+
+const session = await readAuthSession(Astro.request, env.SESSION_SECRET);
+if (session?.role !== 'owner') {
+	return Astro.redirect('/login?next=/tasks/admin/');
+}
 ---
 
 <!doctype html>
@@ -139,7 +148,8 @@ import { SITE_DESCRIPTION, SITE_TITLE } from '../../consts';
 				font-size: 1.15rem;
 			}
 
-			.panel-desc {
+			.panel-desc,
+			.status-text {
 				margin: 8px 0 0;
 				color: #666;
 				font-size: 0.92rem;
@@ -244,12 +254,6 @@ import { SITE_DESCRIPTION, SITE_TITLE } from '../../consts';
 				background: #111;
 				border-color: #111;
 				color: #fff;
-			}
-
-			.token-row {
-				display: grid;
-				grid-template-columns: minmax(0, 1fr) auto;
-				gap: 10px;
 			}
 
 			.status-message {
@@ -391,8 +395,7 @@ import { SITE_DESCRIPTION, SITE_TITLE } from '../../consts';
 				}
 
 				.form-row,
-				.task-summary,
-				.token-row {
+				.task-summary {
 					grid-template-columns: 1fr;
 				}
 
@@ -410,7 +413,7 @@ import { SITE_DESCRIPTION, SITE_TITLE } from '../../consts';
 			<p class="page-kicker">Tasks Admin</p>
 			<h1 class="page-title">任務管理</h1>
 			<p class="page-desc">
-				新增每日與每週任務，並將已完成的項目同步回 D1 任務資料庫。
+				使用本人登入狀態新增每日與每週任務，並將已完成的項目同步回 D1 任務資料庫。
 			</p>
 
 			<div class="page-actions">
@@ -423,38 +426,22 @@ import { SITE_DESCRIPTION, SITE_TITLE } from '../../consts';
 			</p>
 
 			<div class="admin-grid">
-				<section class="panel" aria-labelledby="tokenTitle">
+				<section class="panel" aria-labelledby="accountTitle">
 					<div class="panel-header">
-						<h2 class="panel-title" id="tokenTitle">授權 token</h2>
+						<h2 class="panel-title" id="accountTitle">登入狀態</h2>
 						<p class="panel-desc">
-							Token 只儲存在此瀏覽器，不會寫入網站程式碼。
+							目前以本人帳號登入，可以新增與完成任務。
 						</p>
 					</div>
 					<div class="panel-body">
-						<div class="form-grid">
-							<div class="field">
-								<label for="taskToken">TASK_API_TOKEN</label>
-								<div class="token-row">
-									<input
-										id="taskToken"
-										name="taskToken"
-										type="password"
-										autocomplete="off"
-										placeholder="貼上 token"
-									/>
-									<button type="button" class="button" id="toggleTokenButton">
-										顯示
-									</button>
-								</div>
-							</div>
-							<div class="page-actions">
-								<button type="button" class="button button-primary" id="saveTokenButton">
-									儲存 token
-								</button>
-								<button type="button" class="button" id="clearTokenButton">
-									清除
-								</button>
-							</div>
+						<p class="status-text" id="accountStatus">
+							目前身分：{session.username}（本人）
+						</p>
+						<div class="page-actions">
+							<a href="/login?next=/tasks/admin/" class="action-link">切換帳號</a>
+							<button type="button" class="button" id="logoutButton">
+								登出
+							</button>
 						</div>
 					</div>
 				</section>
@@ -583,8 +570,6 @@ import { SITE_DESCRIPTION, SITE_TITLE } from '../../consts';
 		<Footer />
 
 		<script>
-			const tokenStorageKey = 'kai-research-task-api-token';
-
 			const statusLabels = {
 				todo: '未開始',
 				doing: '進行中',
@@ -610,12 +595,9 @@ import { SITE_DESCRIPTION, SITE_TITLE } from '../../consts';
 
 			const refs = {
 				form: document.querySelector('#taskForm'),
-				tokenInput: document.querySelector('#taskToken'),
-				toggleTokenButton:
-					document.querySelector('#toggleTokenButton'),
-				saveTokenButton: document.querySelector('#saveTokenButton'),
-				clearTokenButton:
-					document.querySelector('#clearTokenButton'),
+				accountStatus: document.querySelector('#accountStatus'),
+				logoutButton:
+					document.querySelector('#logoutButton'),
 				refreshTasksButton:
 					document.querySelector('#refreshTasksButton'),
 				statusMessage: document.querySelector('#statusMessage'),
@@ -635,10 +617,8 @@ import { SITE_DESCRIPTION, SITE_TITLE } from '../../consts';
 
 			if (requiredRefs.every(Boolean)) {
 				const form = refs.form;
-				const tokenInput = refs.tokenInput;
-				const toggleTokenButton = refs.toggleTokenButton;
-				const saveTokenButton = refs.saveTokenButton;
-				const clearTokenButton = refs.clearTokenButton;
+				const accountStatus = refs.accountStatus;
+				const logoutButton = refs.logoutButton;
 				const refreshTasksButton = refs.refreshTasksButton;
 				const statusMessage = refs.statusMessage;
 				const taskList = refs.taskList;
@@ -658,8 +638,6 @@ import { SITE_DESCRIPTION, SITE_TITLE } from '../../consts';
 					statusMessage.classList.toggle('success', tone === 'success');
 					statusMessage.classList.toggle('error', tone === 'error');
 				};
-
-				const getToken = () => tokenInput.value.trim();
 
 				const formatDateInput = (date) => {
 					const localDate = new Date(
@@ -693,13 +671,6 @@ import { SITE_DESCRIPTION, SITE_TITLE } from '../../consts';
 					weekField.hidden = !isWeekly;
 				};
 
-				const updateStoredTokenState = () => {
-					const storedToken = localStorage.getItem(tokenStorageKey);
-					if (storedToken && !tokenInput.value) {
-						tokenInput.value = storedToken;
-					}
-				};
-
 				const parseTags = (value) =>
 					String(value ?? '')
 						.split(',')
@@ -717,11 +688,11 @@ import { SITE_DESCRIPTION, SITE_TITLE } from '../../consts';
 
 					if (body && !body.ok) {
 						if (body.error === 'unauthorized') {
-							return 'Token 不正確或尚未儲存。';
+							return '請先以本人帳號登入。';
 						}
 
 						if (body.error === 'auth_unconfigured') {
-							return 'Cloudflare 尚未設定 TASK_API_TOKEN。';
+							return 'Cloudflare 尚未設定登入 secrets。';
 						}
 
 						if (body.error === 'database_unavailable') {
@@ -738,6 +709,7 @@ import { SITE_DESCRIPTION, SITE_TITLE } from '../../consts';
 				async function apiFetch(url, init) {
 					const response = await fetch(url, {
 						...init,
+						credentials: init?.credentials ?? 'same-origin',
 						headers: {
 							...(init?.headers ?? {}),
 						},
@@ -751,16 +723,11 @@ import { SITE_DESCRIPTION, SITE_TITLE } from '../../consts';
 				}
 
 				async function authorizedFetch(url, init) {
-					const token = getToken();
-					if (!token) {
-						throw new Error('請先儲存 token。');
-					}
-
 					return apiFetch(url, {
 						...init,
+						credentials: 'same-origin',
 						headers: {
 							'content-type': 'application/json',
-							authorization: `Bearer ${token}`,
 							...(init.headers ?? {}),
 						},
 					});
@@ -888,6 +855,17 @@ import { SITE_DESCRIPTION, SITE_TITLE } from '../../consts';
 					setMessage('任務已更新。', 'success');
 				};
 
+				const loadSession = async () => {
+					const data = await apiFetch('/api/auth/session');
+					if (data.role !== 'owner') {
+						window.location.href = '/login?next=/tasks/admin/';
+						return false;
+					}
+
+					accountStatus.textContent = `目前身分：${data.username}（本人）`;
+					return true;
+				};
+
 				const createTask = async () => {
 					const formData = new FormData(form);
 					const type = selectedTaskType();
@@ -958,7 +936,6 @@ import { SITE_DESCRIPTION, SITE_TITLE } from '../../consts';
 					}
 				};
 
-				updateStoredTokenState();
 				taskDate.value = taskDate.value || formatDateInput(new Date());
 				week.value = week.value || getIsoWeek(new Date());
 				updateScheduleFields();
@@ -997,27 +974,18 @@ import { SITE_DESCRIPTION, SITE_TITLE } from '../../consts';
 					});
 				});
 
-				saveTokenButton.addEventListener('click', () => {
-					const token = getToken();
-					if (!token) {
-						setMessage('請先貼上 token。', 'error');
-						return;
-					}
-
-					localStorage.setItem(tokenStorageKey, token);
-					setMessage('Token 已儲存在此瀏覽器。', 'success');
-				});
-
-				clearTokenButton.addEventListener('click', () => {
-					localStorage.removeItem(tokenStorageKey);
-					tokenInput.value = '';
-					setMessage('Token 已清除。');
-				});
-
-				toggleTokenButton.addEventListener('click', () => {
-					const isPassword = tokenInput.type === 'password';
-					tokenInput.type = isPassword ? 'text' : 'password';
-					toggleTokenButton.textContent = isPassword ? '隱藏' : '顯示';
+				logoutButton.addEventListener('click', () => {
+					apiFetch('/api/auth/logout', {
+						method: 'POST',
+					})
+						.then(() => {
+							window.location.href = '/login';
+						})
+						.catch((error) => {
+							const message =
+								error instanceof Error ? error.message : '登出失敗。';
+							setMessage(message, 'error');
+						});
 				});
 
 				refreshTasksButton.addEventListener('click', () => {
@@ -1028,10 +996,16 @@ import { SITE_DESCRIPTION, SITE_TITLE } from '../../consts';
 					});
 				});
 
-				loadTasks().catch((error) => {
-					const message = error instanceof Error ? error.message : '載入任務失敗。';
-					setMessage(message, 'error');
-				});
+				loadSession()
+					.then((isOwner) => {
+						if (isOwner) return loadTasks();
+						return undefined;
+					})
+					.catch((error) => {
+						const message =
+							error instanceof Error ? error.message : '載入任務失敗。';
+						setMessage(message, 'error');
+					});
 			}
 		</script>
 	</body>

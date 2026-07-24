@@ -1,0 +1,423 @@
+---
+import BaseHead from '../components/BaseHead.astro';
+import Footer from '../components/Footer.astro';
+import Header from '../components/Header.astro';
+import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
+---
+
+<!doctype html>
+<html lang="zh-TW">
+	<head>
+		<BaseHead title={`登入 | ${SITE_TITLE}`} description={SITE_DESCRIPTION} />
+
+		<style>
+			main {
+				width: 100%;
+				max-width: 920px;
+				margin: 0 auto;
+				padding: 40px 20px;
+			}
+
+			.page-title {
+				margin: 0 0 10px;
+				color: #111;
+				font-size: 3.2rem;
+				font-weight: 800;
+				letter-spacing: 0;
+			}
+
+			.page-desc {
+				max-width: 720px;
+				margin: 0 0 32px;
+				color: #666;
+				font-size: 1.05rem;
+				line-height: 1.8;
+			}
+
+			.login-grid {
+				display: grid;
+				grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+				gap: 22px;
+				align-items: start;
+			}
+
+			.panel {
+				border: 1px solid #eee;
+				border-radius: 8px;
+				background: #fff;
+				box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+			}
+
+			.panel-header,
+			.panel-body {
+				padding: 22px;
+			}
+
+			.panel-header {
+				border-bottom: 1px solid #eee;
+			}
+
+			.panel-title {
+				margin: 0;
+				color: #111;
+				font-size: 1.2rem;
+			}
+
+			.panel-desc,
+			.status-text {
+				margin: 8px 0 0;
+				color: #666;
+				font-size: 0.94rem;
+				line-height: 1.7;
+			}
+
+			.form-grid {
+				display: grid;
+				gap: 16px;
+			}
+
+			.field {
+				display: grid;
+				gap: 8px;
+			}
+
+			label {
+				color: #333;
+				font-size: 0.9rem;
+				font-weight: 700;
+			}
+
+			input {
+				width: 100%;
+				min-height: 42px;
+				padding: 9px 12px;
+				border: 1px solid #e5e7eb;
+				border-radius: 8px;
+				background: #fff;
+				color: #111;
+				font: inherit;
+				font-size: 0.95rem;
+				line-height: 1.5;
+			}
+
+			input:focus {
+				outline: 2px solid #111;
+				outline-offset: 2px;
+				border-color: #111;
+			}
+
+			.button-row {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 12px;
+			}
+
+			.button,
+			.link-button {
+				display: inline-flex;
+				align-items: center;
+				justify-content: center;
+				min-height: 42px;
+				padding: 10px 16px;
+				border: 1px solid #e5e7eb;
+				border-radius: 999px;
+				background: #fff;
+				color: #333;
+				font: inherit;
+				font-size: 0.95rem;
+				font-weight: 700;
+				text-decoration: none;
+				cursor: pointer;
+				transition:
+					background-color 0.2s ease,
+					border-color 0.2s ease,
+					color 0.2s ease,
+					transform 0.2s ease;
+			}
+
+			.button:hover,
+			.link-button:hover {
+				background: #f3f4f6;
+				border-color: #d1d5db;
+				transform: translateY(-2px);
+			}
+
+			.button-primary {
+				background: #111;
+				border-color: #111;
+				color: #fff;
+			}
+
+			.button-primary:hover {
+				background: #333;
+				border-color: #333;
+			}
+
+			.status-message {
+				margin: 0 0 18px;
+				padding: 12px 14px;
+				border: 1px solid #e5e7eb;
+				border-radius: 8px;
+				background: #f9fafb;
+				color: #444;
+				font-size: 0.92rem;
+				line-height: 1.6;
+			}
+
+			.status-message.success {
+				border-color: #c7d7c7;
+				background: #f5faf5;
+				color: #255525;
+			}
+
+			.status-message.error {
+				border-color: #e5c7c7;
+				background: #fff7f7;
+				color: #7a2626;
+			}
+
+			@media (max-width: 720px) {
+				.login-grid {
+					grid-template-columns: 1fr;
+				}
+
+				.page-title {
+					font-size: 2.4rem;
+				}
+			}
+		</style>
+	</head>
+
+	<body>
+		<Header />
+
+		<main>
+			<h1 class="page-title">登入</h1>
+			<p class="page-desc">
+				本人登入後可以進入管理功能；訪客登入後可以保留訪客身分瀏覽網站。
+			</p>
+
+			<p class="status-message" id="statusMessage" aria-live="polite">
+				檢查登入狀態中。
+			</p>
+
+			<div class="login-grid">
+				<section class="panel" aria-labelledby="ownerLoginTitle">
+					<div class="panel-header">
+						<h2 class="panel-title" id="ownerLoginTitle">本人登入</h2>
+						<p class="panel-desc">
+							使用 Cloudflare secret 中設定的帳號與密碼。
+						</p>
+					</div>
+					<div class="panel-body">
+						<form class="form-grid" id="ownerLoginForm">
+							<div class="field">
+								<label for="username">帳號</label>
+								<input
+									id="username"
+									name="username"
+									type="text"
+									autocomplete="username"
+									placeholder="kai"
+									required
+								/>
+							</div>
+
+							<div class="field">
+								<label for="password">密碼</label>
+								<input
+									id="password"
+									name="password"
+									type="password"
+									autocomplete="current-password"
+									required
+								/>
+							</div>
+
+							<div class="button-row">
+								<button type="submit" class="button button-primary" id="ownerLoginButton">
+									登入本人帳號
+								</button>
+								<button type="button" class="button" id="logoutButton">
+									登出
+								</button>
+							</div>
+						</form>
+					</div>
+				</section>
+
+				<section class="panel" aria-labelledby="guestLoginTitle">
+					<div class="panel-header">
+						<h2 class="panel-title" id="guestLoginTitle">訪客登入</h2>
+						<p class="panel-desc">
+							訪客可以瀏覽公開內容，但不能新增或完成任務。
+						</p>
+					</div>
+					<div class="panel-body">
+						<p class="status-text" id="currentSessionText">
+							目前尚未登入。
+						</p>
+						<div class="button-row">
+							<button type="button" class="button" id="guestLoginButton">
+								以訪客登入
+							</button>
+							<a class="link-button" href="/dashboard">前往儀表板</a>
+						</div>
+					</div>
+				</section>
+			</div>
+		</main>
+
+		<Footer />
+
+		<script>
+			const refs = {
+				form: document.querySelector('#ownerLoginForm'),
+				username: document.querySelector('#username'),
+				password: document.querySelector('#password'),
+				ownerLoginButton: document.querySelector('#ownerLoginButton'),
+				guestLoginButton: document.querySelector('#guestLoginButton'),
+				logoutButton: document.querySelector('#logoutButton'),
+				statusMessage: document.querySelector('#statusMessage'),
+				currentSessionText: document.querySelector('#currentSessionText'),
+			};
+
+			if (Object.values(refs).every(Boolean)) {
+				const {
+					form,
+					username,
+					password,
+					ownerLoginButton,
+					guestLoginButton,
+					logoutButton,
+					statusMessage,
+					currentSessionText,
+				} = refs;
+
+				const url = new URL(window.location.href);
+				const next = url.searchParams.get('next');
+				const safeNext = next && next.startsWith('/') && !next.startsWith('//')
+					? next
+					: '/dashboard';
+
+				const setMessage = (message, tone = 'neutral') => {
+					statusMessage.textContent = message;
+					statusMessage.classList.toggle('success', tone === 'success');
+					statusMessage.classList.toggle('error', tone === 'error');
+				};
+
+				const readError = async (response) => {
+					try {
+						const body = await response.json();
+						if (body.error === 'unauthorized') return '帳號或密碼不正確。';
+						if (body.error === 'auth_unconfigured') {
+							return '尚未設定登入用的 Cloudflare secrets。';
+						}
+						return body.message ?? body.error ?? `請求失敗 (${response.status})。`;
+					} catch {
+						return `請求失敗 (${response.status})。`;
+					}
+				};
+
+				const postJson = async (endpoint, body = {}) => {
+					const response = await fetch(endpoint, {
+						method: 'POST',
+						credentials: 'same-origin',
+						headers: {
+							'content-type': 'application/json',
+						},
+						body: JSON.stringify(body),
+					});
+
+					if (!response.ok) {
+						throw new Error(await readError(response));
+					}
+
+					return response.json();
+				};
+
+				const updateSession = async () => {
+					const response = await fetch('/api/auth/session', {
+						credentials: 'same-origin',
+					});
+					const session = await response.json();
+
+					if (session.role === 'owner') {
+						currentSessionText.textContent = `目前身分：${session.username}（本人）`;
+						setMessage('已登入本人帳號。', 'success');
+						return;
+					}
+
+					if (session.role === 'guest') {
+						currentSessionText.textContent = '目前身分：訪客';
+						setMessage('目前以訪客身分登入。');
+						return;
+					}
+
+					currentSessionText.textContent = '目前尚未登入。';
+					setMessage(session.configured ? '目前尚未登入。' : '尚未設定登入用的 Cloudflare secrets。');
+				};
+
+				form.addEventListener('submit', (event) => {
+					event.preventDefault();
+					ownerLoginButton.disabled = true;
+					ownerLoginButton.textContent = '登入中';
+
+					postJson('/api/auth/login', {
+						username: username.value,
+						password: password.value,
+					})
+						.then(() => {
+							window.location.href = safeNext;
+						})
+						.catch((error) => {
+							setMessage(
+								error instanceof Error ? error.message : '登入失敗。',
+								'error',
+							);
+						})
+						.finally(() => {
+							ownerLoginButton.disabled = false;
+							ownerLoginButton.textContent = '登入本人帳號';
+						});
+				});
+
+				guestLoginButton.addEventListener('click', () => {
+					guestLoginButton.disabled = true;
+					guestLoginButton.textContent = '登入中';
+
+					postJson('/api/auth/guest')
+						.then(() => {
+							const guestNext = safeNext === '/tasks/admin/' ? '/dashboard' : safeNext;
+							window.location.href = guestNext;
+						})
+						.catch((error) => {
+							setMessage(
+								error instanceof Error ? error.message : '訪客登入失敗。',
+								'error',
+							);
+						})
+						.finally(() => {
+							guestLoginButton.disabled = false;
+							guestLoginButton.textContent = '以訪客登入';
+						});
+				});
+
+				logoutButton.addEventListener('click', () => {
+					postJson('/api/auth/logout')
+						.then(updateSession)
+						.catch((error) => {
+							setMessage(
+								error instanceof Error ? error.message : '登出失敗。',
+								'error',
+							);
+						});
+				});
+
+				updateSession().catch(() => {
+					setMessage('無法讀取登入狀態。', 'error');
+				});
+			}
+		</script>
+	</body>
+</html>

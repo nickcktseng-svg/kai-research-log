@@ -126,7 +126,27 @@ npm run preview
 }
 ```
 
-13. 設定受保護任務 API token
+13. 設定登入系統 secrets
+
+本人登入與訪客登入需要 `SESSION_SECRET`。本人帳號還需要 `OWNER_USERNAME` 與 `OWNER_PASSWORD`。請用 Cloudflare secret 設定，不要寫進 repository：
+
+```bash
+npx wrangler secret put SESSION_SECRET
+npx wrangler secret put OWNER_USERNAME
+npx wrangler secret put OWNER_PASSWORD
+```
+
+`OWNER_USERNAME` 若未設定，程式會使用預設帳號 `kai`。`SESSION_SECRET` 建議使用長度足夠、不可猜測的隨機字串。
+
+本機開發時可以在 `.dev.vars` 放測試用值；這個檔案已被 `.gitignore` 忽略：
+
+```text
+SESSION_SECRET="replace-with-local-session-secret"
+OWNER_USERNAME="kai"
+OWNER_PASSWORD="replace-with-local-owner-password"
+```
+
+14. 設定受保護任務 API token
 
 受保護的任務寫入 API 需要 `TASK_API_TOKEN`，請用 Cloudflare secret 設定，不要寫進 repository：
 
@@ -140,12 +160,14 @@ npx wrangler secret put TASK_API_TOKEN
 TASK_API_TOKEN="replace-with-local-test-token"
 ```
 
-14. 測試受保護任務 API
+前台 `/tasks/admin/` 會優先使用本人登入後的 session cookie 呼叫受保護 API；`TASK_API_TOKEN` 仍保留給 curl、腳本或其他非瀏覽器流程作為備援。
+
+15. 測試受保護任務 API
 
 以下 API 都需要：
 
 ```text
-Authorization: Bearer <TASK_API_TOKEN>
+本人登入 session cookie，或 `Authorization: Bearer <TASK_API_TOKEN>`
 ```
 
 新增任務：
@@ -189,17 +211,18 @@ curl -X POST http://localhost:8787/api/admin/tasks/<task-id>/complete \
   -d '{}'
 ```
 
-如果尚未設定 `TASK_API_TOKEN`，受保護 API 會回傳 `auth_unconfigured`。如果 token 錯誤或缺少 `Authorization` header，會回傳 `unauthorized`。
+如果尚未設定 `SESSION_SECRET` 與 `TASK_API_TOKEN`，受保護 API 會回傳 `auth_unconfigured`。如果登入狀態、token 錯誤或缺少授權資訊，會回傳 `unauthorized`。
 
 ## 目前限制
 
 - `/tasks` 目前優先使用 D1，D1 不可用時回退到 `tasks.json`。
 - `weekly-reports.json` 目前仍是 `/weekly` 的正式資料來源。
 - `/dashboard` 目前仍使用 JSON，不會因受保護任務 API 而自動改用 D1。
-- 目前新增的寫入能力只限 `/api/admin/tasks`、`/api/admin/tasks/<task-id>` 與 `/api/admin/tasks/<task-id>/complete`，而且必須帶 `TASK_API_TOKEN`。
-- 目前尚未建立刪除 API、登入頁、後台編輯介面或公開 CRUD UI。
+- 目前新增的寫入能力只限 `/api/admin/tasks`、`/api/admin/tasks/<task-id>` 與 `/api/admin/tasks/<task-id>/complete`，而且必須具備本人登入 session 或 `TASK_API_TOKEN`。
+- `/tasks/admin/` 是本人登入後使用的任務管理頁，目前可新增任務與標記完成。
+- 目前尚未建立刪除 API、完整後台編輯介面或 D1 版 Blog 日誌編輯器。
 - `db/seed.sql` 是人工/部署流程使用的資料匯入檔，不是公開寫入 API。
-- 下一階段才會評估是否將 `/dashboard` 與 `/weekly` 資料來源切換到 D1。
+- 下一階段才會評估是否將 `/dashboard`、`/weekly` 與 Blog 日誌新增流程切換到 D1。
 
 ## 注意事項
 
