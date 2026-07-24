@@ -2,11 +2,16 @@
 
 import mdx from '@astrojs/mdx';
 import sitemap from '@astrojs/sitemap';
+import cloudflare from '@astrojs/cloudflare';
 import { defineConfig, fontProviders } from 'astro/config';
 
 // https://astro.build/config
 export default defineConfig({
 	site: 'https://kai-research-log.nick-cktseng.workers.dev',
+	adapter: cloudflare({
+		imageService: 'compile',
+		prerenderEnvironment: 'node',
+	}),
 	integrations: [mdx(), sitemap()],
 	fonts: [
 		{
