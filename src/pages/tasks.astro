@@ -3,41 +3,112 @@ import BaseHead from '../components/BaseHead.astro';
 import Footer from '../components/Footer.astro';
 import Header from '../components/Header.astro';
 import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
-import tasks from '../data/tasks.json';
+import jsonTasks from '../data/tasks.json';
+import { listDatabaseTasks } from '../lib/database/tasks';
+import type {
+	TaskPriority,
+	TaskStatus,
+	TaskType,
+	TaskWithTags,
+} from '../types/database';
+import { env } from 'cloudflare:workers';
+
+export const prerender = false;
+
+type JsonTask = (typeof jsonTasks)[number];
+
+type TaskView = {
+	id: string;
+	title: string;
+	description: string;
+	type: TaskType;
+	category: string;
+	tags: string[];
+	status: TaskStatus;
+	priority: TaskPriority;
+	date: string | null;
+	week: string | null;
+};
 
 const statusLabels = {
 	todo: '未開始',
 	doing: '進行中',
 	done: '已完成',
-};
+} satisfies Record<TaskStatus, string>;
 
 const priorityLabels = {
 	low: '低',
 	medium: '中',
 	high: '高',
-};
+} satisfies Record<TaskPriority, string>;
 
 const typeLabels = {
 	daily: '每日',
 	weekly: '每週',
-};
+} satisfies Record<TaskType, string>;
 
 const priorityOrder = {
 	high: 0,
 	medium: 1,
 	low: 2,
+} satisfies Record<TaskPriority, number>;
+
+const normalizeJsonTask = (task: JsonTask): TaskView => ({
+	id: task.id,
+	title: task.title,
+	description: task.description,
+	type: task.type,
+	category: task.category,
+	tags: task.tags,
+	status: task.status,
+	priority: task.priority,
+	date: task.date,
+	week: task.week,
+});
+
+const normalizeDatabaseTask = (task: TaskWithTags): TaskView => ({
+	id: task.id,
+	title: task.title,
+	description: task.description,
+	type: task.type,
+	category: task.category,
+	tags: task.tags,
+	status: task.status,
+	priority: task.priority,
+	date: task.task_date,
+	week: task.week,
+});
+
+const loadTasks = async (): Promise<TaskView[]> => {
+	const db = env.DB as D1Database | undefined;
+
+	if (!db) {
+		return jsonTasks.map(normalizeJsonTask);
+	}
+
+	try {
+		const databaseTasks = await listDatabaseTasks(db);
+		return databaseTasks.map(normalizeDatabaseTask);
+	} catch (error) {
+		console.error('Failed to load D1 tasks. Falling back to JSON tasks.', error);
+		return jsonTasks.map(normalizeJsonTask);
+	}
 };
 
+const tasks = await loadTasks();
+
 const latestDailyDate = tasks
-	.filter((task) => task.type === 'daily')
-	.map((task) => task.date)
+	.filter((task) => task.type === 'daily' && task.date)
+	.map((task) => task.date as string)
 	.sort((a, b) => b.localeCompare(a))[0];
 
-const sortTasks = (taskList: typeof tasks) =>
+const sortTasks = (taskList: TaskView[]) =>
 	[...taskList].sort((a, b) => {
 		const priorityDiff = priorityOrder[a.priority] - priorityOrder[b.priority];
 		if (priorityDiff !== 0) return priorityDiff;
-		return `${b.date}${b.week}`.localeCompare(`${a.date}${a.week}`);
+		return `${b.date ?? ''}${b.week ?? ''}${b.id}`.localeCompare(
+			`${a.date ?? ''}${a.week ?? ''}${a.id}`,
+		);
 	});
 
 const todayTasks = sortTasks(
@@ -58,7 +129,9 @@ const completedTasks = sortTasks(tasks.filter((task) => task.status === 'done'))
 const taskSections = [
 	{
 		title: '今日任務',
-		description: `依最新日期 ${latestDailyDate} 顯示尚未完成的每日任務。`,
+		description: latestDailyDate
+			? `依最新日期 ${latestDailyDate} 顯示尚未完成的每日任務。`
+			: '顯示尚未完成的每日任務。',
 		tasks: todayTasks,
 		empty: '目前沒有尚未完成的今日任務。',
 	},
@@ -283,8 +356,8 @@ const taskSections = [
 
 											<p class="task-date">
 												{task.type === 'daily'
-													? task.date
-													: task.week}
+													? (task.date ?? '未設定日期')
+													: (task.week ?? '未設定週次')}
 											</p>
 										</article>
 									</li>

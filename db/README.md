@@ -1,6 +1,6 @@
 # Cloudflare D1 設定說明
 
-這個資料夾只建立 D1 基礎架構。現有正式頁面仍使用 `src/data/tasks.json` 與 `src/data/weekly-reports.json`，D1 尚未取代 JSON 資料來源。
+這個資料夾記錄 D1 基礎架構與資料同步流程。目前 `/tasks` 會優先讀取 D1，當 D1 binding 或查詢不可用時才回退到 `src/data/tasks.json`。`/weekly` 與 `/dashboard` 目前仍使用 `src/data/weekly-reports.json` 與 `src/data/tasks.json`。
 
 ## 人工設定步驟
 
@@ -78,7 +78,7 @@ npm run db:local:seed
 npm run db:remote:seed
 ```
 
-`db/seed.sql` 可重複執行。相同 ID 的任務與週報會更新，對應的 tags、categories 與週報 sections 會依照目前 JSON 重新建立。
+`db/seed.sql` 可重複執行。相同 ID 的任務與週報會更新，對應的 tags、categories 與週報 sections 會依照目前 JSON 重新建立。因為 `/tasks` 優先讀取 D1，遠端 D1 seed 或受保護任務 API 寫入後，任務頁會反映 D1 中的資料。
 
 10. 本機測試
 
@@ -193,13 +193,13 @@ curl -X POST http://localhost:8787/api/admin/tasks/<task-id>/complete \
 
 ## 目前限制
 
-- `tasks.json` 與 `weekly-reports.json` 目前仍是正式頁面的資料來源。
-- D1 尚未取代 `tasks.json` 與 `weekly-reports.json`。
-- `/tasks`、`/weekly` 與 `/dashboard` 目前仍使用 JSON，不會因受保護任務 API 而自動改用 D1。
+- `/tasks` 目前優先使用 D1，D1 不可用時回退到 `tasks.json`。
+- `weekly-reports.json` 目前仍是 `/weekly` 的正式資料來源。
+- `/dashboard` 目前仍使用 JSON，不會因受保護任務 API 而自動改用 D1。
 - 目前新增的寫入能力只限 `/api/admin/tasks`、`/api/admin/tasks/<task-id>` 與 `/api/admin/tasks/<task-id>/complete`，而且必須帶 `TASK_API_TOKEN`。
 - 目前尚未建立刪除 API、登入頁、後台編輯介面或公開 CRUD UI。
 - `db/seed.sql` 是人工/部署流程使用的資料匯入檔，不是公開寫入 API。
-- 下一階段才會評估是否將正式頁面資料來源切換到 D1。
+- 下一階段才會評估是否將 `/dashboard` 與 `/weekly` 資料來源切換到 D1。
 
 ## 注意事項
 
