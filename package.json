@@ -11,7 +11,10 @@
     "preview": "astro preview",
     "astro": "astro",
     "db:local:init": "wrangler d1 execute kai-research-db --local --file=./db/schema.sql",
-    "db:remote:init": "wrangler d1 execute kai-research-db --remote --file=./db/schema.sql"
+    "db:remote:init": "wrangler d1 execute kai-research-db --remote --file=./db/schema.sql",
+    "db:seed:generate": "node scripts/generate-d1-seed.mjs",
+    "db:local:seed": "npm run db:seed:generate && wrangler d1 execute kai-research-db --local --file=./db/seed.sql",
+    "db:remote:seed": "npm run db:seed:generate && wrangler d1 execute kai-research-db --remote --file=./db/seed.sql"
   },
   "dependencies": {
     "@astrojs/mdx": "^7.0.0",
