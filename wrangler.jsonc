@@ -1,0 +1,24 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "kai-research-log",
+	"main": "@astrojs/cloudflare/entrypoints/server",
+	"compatibility_date": "2026-07-17",
+	"assets": {
+		"directory": "./dist",
+		"binding": "ASSETS"
+	},
+	"kv_namespaces": [
+		{
+			"binding": "SESSION",
+			"id": "e0c672d8a132472ea95212b804f3c6f8",
+			"preview_id": "e0c672d8a132472ea95212b804f3c6f8"
+		}
+	],
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "kai-research-db",
+			"database_id": "4be96072-26e6-4478-8b93-5350e93e52ac"
+		}
+	]
+}
