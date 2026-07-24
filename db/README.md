@@ -54,7 +54,33 @@ npx wrangler d1 execute kai-research-db --remote --file=./db/schema.sql
 npm run db:remote:init
 ```
 
-7. 本機測試
+7. 產生 JSON seed SQL
+
+```bash
+npm run db:seed:generate
+```
+
+這會依照目前的 `src/data/tasks.json` 與 `src/data/weekly-reports.json` 產生：
+
+```text
+db/seed.sql
+```
+
+8. 匯入本機 seed 資料
+
+```bash
+npm run db:local:seed
+```
+
+9. 匯入遠端 seed 資料
+
+```bash
+npm run db:remote:seed
+```
+
+`db/seed.sql` 可重複執行。相同 ID 的任務與週報會更新，對應的 tags、categories 與週報 sections 會依照目前 JSON 重新建立。
+
+10. 本機測試
 
 ```bash
 npm run dev
@@ -67,7 +93,7 @@ npm run build
 npm run preview
 ```
 
-8. 測試 health API
+11. 測試 health API
 
 ```text
 /api/health
@@ -82,6 +108,15 @@ npm run preview
 }
 ```
 
+12. 測試 D1 只讀資料 API
+
+```text
+/api/db/tasks
+/api/db/weekly-reports
+```
+
+這兩個 API 只讀取 D1，不會新增、修改或刪除資料。
+
 如果尚未設定 `DB` binding，或 D1 查詢失敗，會回傳：
 
 ```json
@@ -95,8 +130,9 @@ npm run preview
 
 - `tasks.json` 與 `weekly-reports.json` 目前仍是正式頁面的資料來源。
 - D1 尚未取代 `tasks.json` 與 `weekly-reports.json`。
-- 目前只新增只讀 `/api/health`，不會寫入、刪除或修改任何資料。
-- 下一階段才會建立資料搬移流程與受保護的 CRUD API。
+- 目前只新增只讀 `/api/health`、`/api/db/tasks` 與 `/api/db/weekly-reports`，不會透過網站 API 寫入、刪除或修改任何資料。
+- `db/seed.sql` 是人工/部署流程使用的資料匯入檔，不是公開寫入 API。
+- 下一階段才會建立受保護的 CRUD API，並評估是否將正式頁面資料來源切換到 D1。
 
 ## 注意事項
 
