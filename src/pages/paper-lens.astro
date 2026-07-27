@@ -1,0 +1,623 @@
+---
+import BaseHead from '../components/BaseHead.astro';
+import Footer from '../components/Footer.astro';
+import Header from '../components/Header.astro';
+import { SITE_TITLE } from '../consts';
+---
+
+<!doctype html>
+<html lang="zh-TW">
+	<head>
+		<BaseHead title={`Paper Lens | ${SITE_TITLE}`} description="文獻分析 Prompt 工作台" />
+		<style>
+			main {
+				width: 100%;
+				max-width: 1100px;
+				margin: 0 auto;
+				padding: 40px 20px 72px;
+			}
+			.page-head {
+				margin-bottom: 32px;
+			}
+			.page-title {
+				font-size: 3.5rem;
+				font-weight: 800;
+				margin: 0 0 10px;
+				color: #111;
+			}
+			.page-desc {
+				max-width: 680px;
+				color: #666;
+				font-size: 1.05rem;
+				line-height: 1.7;
+				margin: 0;
+			}
+			.workspace {
+				display: grid;
+				grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
+				gap: 24px;
+				align-items: start;
+			}
+			.panel {
+				background: #fff;
+				border: 1px solid #eaeaea;
+				border-radius: 8px;
+				padding: 24px;
+				box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
+			}
+			.panel h2 {
+				font-size: 1.35rem;
+				margin: 0 0 18px;
+				color: #111;
+			}
+			.field {
+				margin-bottom: 18px;
+			}
+			.field label {
+				display: block;
+				margin-bottom: 8px;
+				font-size: 0.9rem;
+				font-weight: 700;
+				color: #333;
+			}
+			.input,
+			.textarea {
+				width: 100%;
+				border: 1px solid #e5e5e5;
+				border-radius: 8px;
+				background: #fcfcfc;
+				color: #111;
+				font-family: inherit;
+				font-size: 1rem;
+				line-height: 1.6;
+				padding: 13px 14px;
+			}
+			.input:focus,
+			.textarea:focus {
+				outline: none;
+				border-color: #111;
+				background: #fff;
+			}
+			.textarea {
+				min-height: 280px;
+				resize: vertical;
+			}
+			.mode-tabs {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 8px;
+				margin-bottom: 16px;
+			}
+			.mode-tab {
+				border: 1px solid #dedede;
+				background: #fff;
+				color: #555;
+				border-radius: 999px;
+				padding: 8px 13px;
+				font-size: 0.9rem;
+				font-weight: 700;
+				cursor: pointer;
+			}
+			.mode-tab.active {
+				background: #111;
+				border-color: #111;
+				color: #fff;
+			}
+			.mode-list {
+				display: grid;
+				gap: 10px;
+			}
+			.mode-button {
+				width: 100%;
+				text-align: left;
+				border: 1px solid #e8e8e8;
+				border-radius: 8px;
+				background: #fcfcfc;
+				padding: 14px 15px;
+				cursor: pointer;
+				transition: border-color 0.2s ease, background 0.2s ease;
+			}
+			.mode-button:hover,
+			.mode-button.active {
+				border-color: #111;
+				background: #fff;
+			}
+			.mode-name {
+				display: block;
+				color: #111;
+				font-size: 1rem;
+				font-weight: 800;
+				margin-bottom: 3px;
+			}
+			.mode-meta {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 6px;
+				margin-top: 8px;
+			}
+			.pill {
+				display: inline-flex;
+				align-items: center;
+				border-radius: 999px;
+				font-size: 0.78rem;
+				line-height: 1;
+				padding: 6px 9px;
+				background: #f3f4f6;
+				color: #444;
+			}
+			.pill.dark {
+				background: #111;
+				color: #fff;
+			}
+			.mode-copy {
+				color: #666;
+				font-size: 0.92rem;
+				line-height: 1.55;
+				margin: 0;
+			}
+			.output-head {
+				display: flex;
+				align-items: flex-start;
+				justify-content: space-between;
+				gap: 16px;
+				margin-bottom: 16px;
+			}
+			.output-title {
+				margin: 0;
+			}
+			.output-subtitle {
+				margin: 5px 0 0;
+				color: #666;
+				font-size: 0.95rem;
+			}
+			.actions {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 10px;
+				margin-bottom: 16px;
+			}
+			.action-btn {
+				border: 1px solid #111;
+				background: #111;
+				color: #fff;
+				border-radius: 999px;
+				padding: 10px 16px;
+				font-size: 0.92rem;
+				font-weight: 700;
+				cursor: pointer;
+			}
+			.action-btn.secondary {
+				background: #fff;
+				color: #111;
+				border-color: #d8d8d8;
+			}
+			.preview {
+				border: 1px solid #e5e5e5;
+				border-radius: 8px;
+				background: #111;
+				color: #f8f8f8;
+				font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+				font-size: 0.9rem;
+				line-height: 1.65;
+				min-height: 520px;
+				max-height: 720px;
+				overflow: auto;
+				padding: 18px;
+				white-space: pre-wrap;
+			}
+			.framework {
+				display: grid;
+				grid-template-columns: repeat(2, minmax(0, 1fr));
+				gap: 12px;
+				margin-top: 18px;
+			}
+			.framework-item {
+				border: 1px solid #ededed;
+				border-radius: 8px;
+				padding: 14px;
+				background: #fcfcfc;
+			}
+			.framework-item b {
+				display: block;
+				margin-bottom: 5px;
+				color: #111;
+			}
+			.framework-item span {
+				color: #666;
+				font-size: 0.9rem;
+			}
+			.toast {
+				position: fixed;
+				left: 50%;
+				bottom: 28px;
+				transform: translateX(-50%);
+				background: #111;
+				color: #fff;
+				border-radius: 999px;
+				padding: 10px 18px;
+				font-size: 0.92rem;
+				opacity: 0;
+				pointer-events: none;
+				transition: opacity 0.2s ease;
+				z-index: 2000;
+			}
+			.toast.show {
+				opacity: 1;
+			}
+			@media (max-width: 860px) {
+				.workspace,
+				.framework {
+					grid-template-columns: 1fr;
+				}
+				.page-title {
+					font-size: 2.6rem;
+				}
+				.output-head {
+					display: block;
+				}
+			}
+		</style>
+	</head>
+	<body>
+		<Header />
+		<main>
+			<section class="page-head">
+				<h1 class="page-title">Paper Lens</h1>
+				<p class="page-desc">把同一篇論文切換成不同讀法：先速覽、補先備知識、拆方法、檢查證據，最後整理成報告材料。</p>
+			</section>
+
+			<section class="workspace" aria-label="Paper Lens workspace">
+				<div class="panel">
+					<h2>論文資料</h2>
+					<div class="field">
+						<label for="paperTitle">標題</label>
+						<input id="paperTitle" class="input" type="text" placeholder="High-Entropy Alloys as a Discovery Platform for Electrocatalysis" />
+					</div>
+					<div class="field">
+						<label for="paperCitation">引用資訊</label>
+						<input id="paperCitation" class="input" type="text" placeholder="Authors, journal, year, DOI..." />
+					</div>
+					<div class="field">
+						<label for="paperText">摘要或全文</label>
+						<textarea id="paperText" class="textarea" placeholder="貼上 abstract、introduction、methods，或整篇論文文字。"></textarea>
+					</div>
+					<div class="actions">
+						<button id="sampleBtn" class="action-btn secondary" type="button">載入範例</button>
+						<button id="clearBtn" class="action-btn secondary" type="button">清空</button>
+					</div>
+				</div>
+
+				<div class="panel">
+					<div class="output-head">
+						<div>
+							<h2 id="modeTitle" class="output-title">五分鐘速覽</h2>
+							<p id="modeSubtitle" class="output-subtitle">先決定這篇值不值得精讀。</p>
+						</div>
+					</div>
+
+					<div id="categoryTabs" class="mode-tabs" aria-label="分析類型"></div>
+					<div id="modeList" class="mode-list" aria-label="分析模式"></div>
+
+					<div class="actions">
+						<button id="copyPromptBtn" class="action-btn" type="button">複製 Prompt</button>
+						<button id="copyTemplateBtn" class="action-btn secondary" type="button">複製填寫框架</button>
+					</div>
+
+					<pre id="promptPreview" class="preview"></pre>
+					<div id="frameworkList" class="framework"></div>
+				</div>
+			</section>
+		</main>
+		<Footer />
+		<div id="toast" class="toast"></div>
+
+		<script>
+			const modes = [
+				{
+					id: 'quick-scan',
+					category: '新手起步',
+					name: '五分鐘速覽',
+					level: '核心',
+					minutes: '3-5 分鐘',
+					tagline: '先決定這篇值不值得精讀。',
+					brief: '輸出一句話定論、研究問題、方法路線、主要結果、限制與精讀建議。',
+					sections: ['一句話定論', '值不值得精讀', '研究問題', '方法路線', '主要結果', '可信到什麼程度', '精讀建議'],
+					prompt: `你是一位論文快讀分析師。請用繁體中文整理下方論文，目標是在五分鐘內判斷是否值得精讀。
+
+請固定輸出：
+## 一句話定論
+## 值不值得精讀
+## 研究問題
+## 方法路線
+## 主要結果
+## 可信到什麼程度
+## 精讀建議
+
+要求：
+- 主要結果保留關鍵數字與圖表或段落出處。
+- 作者自承限制要和自己的推論分開。
+- 結論措辭若只是 suggest / may，中文不要寫成「證明」。
+- 不足資訊請寫「論文未提及」。
+
+論文資料：
+{{PAPER}}`,
+				},
+				{
+					id: 'prereq-audit',
+					category: '新手起步',
+					name: '先備知識健檢',
+					level: '核心',
+					minutes: '8 分鐘',
+					tagline: '精讀之前先盤點會卡住的概念。',
+					brief: '列出作者假設讀者已懂的理論、方法、材料、統計與術語。',
+					sections: ['先備知識總表', '必要概念', '建議補課順序', '最小可讀路線'],
+					prompt: `你是一位研究生讀書會助教。請檢查下方論文需要哪些先備知識，並用繁體中文輸出。
+
+請固定輸出：
+## 先備知識總表
+用表格列出：類別、項目、白話說明、重要度、用在論文哪裡、不懂會卡在哪。
+## 必要概念
+列出精讀前一定要懂的 3-6 個概念。
+## 建議補課順序
+用 30 分鐘、2 小時、半天三種時間尺度安排。
+## 最小可讀路線
+指出先讀哪些段落或圖表即可開始理解。
+
+論文資料：
+{{PAPER}}`,
+				},
+				{
+					id: 'method-map',
+					category: '深度拆解',
+					name: '方法拆解',
+					level: '基礎',
+					minutes: '10 分鐘',
+					tagline: '把研究流程拆成可重現的步驟。',
+					brief: '聚焦資料、模型、實驗或計算設定，整理輸入、處理、輸出與限制。',
+					sections: ['方法總覽', '資料與條件', '流程步驟', '關鍵假設', '可重現性檢查'],
+					prompt: `你是一位方法學整理員。請只根據下方論文內容，整理研究方法如何運作。
+
+請固定輸出：
+## 方法總覽
+## 資料與條件
+## 流程步驟
+## 關鍵假設
+## 可重現性檢查
+
+要求：
+- 每個步驟都說明輸入、處理方式與輸出。
+- 若參數、樣本數、軟體版本或實驗條件缺失，明寫「論文未提及」。
+- 不替作者補上論文沒有寫的設定。
+
+論文資料：
+{{PAPER}}`,
+				},
+				{
+					id: 'reviewer-two',
+					category: '批判思考',
+					name: '二號審稿人',
+					level: '進階',
+					minutes: '15 分鐘',
+					tagline: '檢查證據是否撐得起主張。',
+					brief: '列出核心主張、主要疑慮、次要問題、過度推論與引用但書。',
+					sections: ['核心主張清單', '總評', 'Major Comments', 'Minor Comments', '過度推論偵測', '給引用者的提醒', '審稿決定'],
+					prompt: `你是嚴格但公平的期刊審稿人。請只根據下方論文，檢查「證據是否撐得起主張」。
+
+請固定輸出：
+## 論文核心主張清單
+## 總評
+## Major Comments
+每條包含：問題描述、出處、為什麼動搖結論、補救建議、引用但書措辭。
+## Minor Comments
+每條包含：問題描述、出處、修正建議、引用但書措辭。
+## 過度推論偵測
+## 給引用者的提醒
+## 審稿決定
+
+要求：
+- 不引入外部文獻或額外數據。
+- 每條批評都要有段落、圖表或表格出處。
+- 不足資訊請寫「論文未提及」。
+
+論文資料：
+{{PAPER}}`,
+				},
+				{
+					id: 'presentation-brief',
+					category: '上台與自測',
+					name: '三分鐘簡報',
+					level: '基礎',
+					minutes: '8 分鐘',
+					tagline: '把論文整理成可以開口報告的版本。',
+					brief: '產生短講架構、投影片節奏、口語稿與可能被問的問題。',
+					sections: ['開場一句話', '三張投影片架構', '口語稿', '可能被問的問題', '結尾句'],
+					prompt: `你是一位研究生簡報教練。請把下方論文整理成三分鐘報告材料。
+
+請固定輸出：
+## 開場一句話
+## 三張投影片架構
+## 口語稿
+## 可能被問的問題
+## 結尾句
+
+要求：
+- 語氣自然，適合組會或課堂報告。
+- 不誇大論文結論。
+- 專有名詞保留英文，解釋用繁體中文。
+
+論文資料：
+{{PAPER}}`,
+				},
+				{
+					id: 'next-ideas',
+					category: '研究者視角',
+					name: '後續題目雷達',
+					level: '進階',
+					minutes: '12 分鐘',
+					tagline: '從限制與未解問題找下一個研究切入點。',
+					brief: '整理可延伸題目、可驗證假說、最低成本實驗或計算路線。',
+					sections: ['可延伸問題', '可驗證假說', '最低成本路線', '風險與限制', '適合引用的位置'],
+					prompt: `你是一位研究題目規劃顧問。請從下方論文中找出可延伸的研究方向。
+
+請固定輸出：
+## 可延伸問題
+## 可驗證假說
+## 最低成本路線
+## 風險與限制
+## 適合引用的位置
+
+要求：
+- 明確區分論文直述與你的推論。
+- 每個延伸題目都要說明根據論文哪個限制、結果或未解問題而來。
+- 避免提出需要大型資源但沒有明確收益的方向。
+
+論文資料：
+{{PAPER}}`,
+				},
+			];
+
+			const samplePaper = {
+				title: 'High-Entropy Alloys as a Discovery Platform for Electrocatalysis',
+				citation: 'Batchelor et al., Joule 3, 834-845 (2019)',
+				text: 'This sample paper uses density functional theory and a linear adsorption-energy model to explore high-entropy alloys as electrocatalyst discovery platforms. Paste an abstract or full paper text here to create an analysis prompt.',
+			};
+
+			const categories = ['全部', ...Array.from(new Set(modes.map((mode) => mode.category)))];
+			let activeCategory = '全部';
+			let activeMode = modes[0];
+
+			const paperTitle = document.getElementById('paperTitle');
+			const paperCitation = document.getElementById('paperCitation');
+			const paperText = document.getElementById('paperText');
+			const categoryTabs = document.getElementById('categoryTabs');
+			const modeList = document.getElementById('modeList');
+			const modeTitle = document.getElementById('modeTitle');
+			const modeSubtitle = document.getElementById('modeSubtitle');
+			const promptPreview = document.getElementById('promptPreview');
+			const frameworkList = document.getElementById('frameworkList');
+			const copyPromptBtn = document.getElementById('copyPromptBtn');
+			const copyTemplateBtn = document.getElementById('copyTemplateBtn');
+			const sampleBtn = document.getElementById('sampleBtn');
+			const clearBtn = document.getElementById('clearBtn');
+			const toastEl = document.getElementById('toast');
+
+			function getPaperBlock() {
+				const title = paperTitle.value.trim() || '未填標題';
+				const citation = paperCitation.value.trim() || '未填引用資訊';
+				const text = paperText.value.trim() || '尚未貼上論文文字';
+				return `標題：${title}\n引用資訊：${citation}\n\n${text}`;
+			}
+
+			function getPrompt() {
+				return activeMode.prompt.replace('{{PAPER}}', getPaperBlock());
+			}
+
+			function showToast(message) {
+				toastEl.textContent = message;
+				toastEl.classList.add('show');
+				window.clearTimeout(showToast.timer);
+				showToast.timer = window.setTimeout(() => toastEl.classList.remove('show'), 1800);
+			}
+
+			function copyText(text, message) {
+				navigator.clipboard.writeText(text).then(() => showToast(message));
+			}
+
+			function renderCategories() {
+				categoryTabs.innerHTML = '';
+				categories.forEach((category) => {
+					const button = document.createElement('button');
+					button.type = 'button';
+					button.className = `mode-tab ${category === activeCategory ? 'active' : ''}`;
+					button.textContent = category;
+					button.addEventListener('click', () => {
+						activeCategory = category;
+						const visibleModes = getVisibleModes();
+						if (!visibleModes.some((mode) => mode.id === activeMode.id)) activeMode = visibleModes[0];
+						render();
+					});
+					categoryTabs.appendChild(button);
+				});
+			}
+
+			function getVisibleModes() {
+				return activeCategory === '全部'
+					? modes
+					: modes.filter((mode) => mode.category === activeCategory);
+			}
+
+			function renderModes() {
+				modeList.innerHTML = '';
+				getVisibleModes().forEach((mode) => {
+					const button = document.createElement('button');
+					button.type = 'button';
+					button.className = `mode-button ${mode.id === activeMode.id ? 'active' : ''}`;
+					button.innerHTML = `
+						<span class="mode-name">${mode.name}</span>
+						<p class="mode-copy">${mode.brief}</p>
+						<span class="mode-meta">
+							<span class="pill dark">${mode.level}</span>
+							<span class="pill">${mode.category}</span>
+							<span class="pill">${mode.minutes}</span>
+						</span>
+					`;
+					button.addEventListener('click', () => {
+						activeMode = mode;
+						render();
+					});
+					modeList.appendChild(button);
+				});
+			}
+
+			function renderFramework() {
+				frameworkList.innerHTML = '';
+				activeMode.sections.forEach((section) => {
+					const item = document.createElement('div');
+					item.className = 'framework-item';
+					item.innerHTML = `<b>${section}</b><span>填入對應的重點、數字與出處。</span>`;
+					frameworkList.appendChild(item);
+				});
+			}
+
+			function renderOutput() {
+				modeTitle.textContent = activeMode.name;
+				modeSubtitle.textContent = activeMode.tagline;
+				promptPreview.textContent = getPrompt();
+				renderFramework();
+			}
+
+			function render() {
+				renderCategories();
+				renderModes();
+				renderOutput();
+			}
+
+			const params = new URLSearchParams(window.location.search);
+			if (params.has('title')) paperTitle.value = params.get('title') || '';
+			if (params.has('citation')) paperCitation.value = params.get('citation') || '';
+
+			[paperTitle, paperCitation, paperText].forEach((field) => {
+				field.addEventListener('input', renderOutput);
+			});
+			copyPromptBtn.addEventListener('click', () => copyText(getPrompt(), 'Prompt 已複製'));
+			copyTemplateBtn.addEventListener('click', () => {
+				const template = activeMode.sections.map((section) => `## ${section}\n`).join('\n');
+				copyText(template, '填寫框架已複製');
+			});
+			sampleBtn.addEventListener('click', () => {
+				paperTitle.value = samplePaper.title;
+				paperCitation.value = samplePaper.citation;
+				paperText.value = samplePaper.text;
+				renderOutput();
+			});
+			clearBtn.addEventListener('click', () => {
+				paperTitle.value = '';
+				paperCitation.value = '';
+				paperText.value = '';
+				renderOutput();
+			});
+
+			render();
+		</script>
+	</body>
+</html>

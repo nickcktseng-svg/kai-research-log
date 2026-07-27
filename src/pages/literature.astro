@@ -492,6 +492,7 @@ import { SITE_TITLE } from '../consts';
 								
 								const citationText = generateCitation(paper);
 								const encodedCitation = encodeURIComponent(citationText);
+								const lensHref = `/paper-lens?title=${encodeURIComponent(title)}&citation=${encodedCitation}`;
 
 								card.innerHTML = `
 									<div class="card-header">
@@ -515,7 +516,7 @@ import { SITE_TITLE } from '../consts';
 
 									<div class="action-btns">
 										<button class="btn-copy" data-citation="${encodedCitation}">📋 Copy Citation</button>
-										<a href="#" class="btn-analyze" onclick="alert('本地端 AI 分析功能即將上線！')">Analyze</a>
+										<a href="${lensHref}" class="btn-analyze">Analyze</a>
 										<a href="${link}" target="_blank" class="btn-open">Open Paper</a>
 									</div>
 								`;
