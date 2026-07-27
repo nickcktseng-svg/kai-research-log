@@ -31,10 +31,17 @@ import { SITE_TITLE } from '../consts';
 
 			.page-desc {
 				max-width: 760px;
-				margin: 0 0 34px;
+				margin: 0 0 22px;
 				color: #666;
 				font-size: 1.1rem;
 				line-height: 1.8;
+			}
+
+			.page-actions {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 12px;
+				margin-bottom: 34px;
 			}
 
 			.section {
@@ -172,8 +179,11 @@ import { SITE_TITLE } from '../consts';
 			.button,
 			.search-btn,
 			.page-btn,
+			.preset-button,
+			.platform-link,
 			.btn-copy,
 			.btn-open,
+			.btn-save,
 			.btn-analyze {
 				display: inline-flex;
 				align-items: center;
@@ -199,12 +209,21 @@ import { SITE_TITLE } from '../consts';
 				padding: 9px 12px;
 			}
 
+			.platform-link,
+			.preset-button {
+				min-height: 38px;
+				padding: 8px 12px;
+			}
+
 			.mode-button:hover,
 			.button:hover,
 			.search-btn:hover,
 			.page-btn:hover:not(:disabled),
+			.preset-button:hover,
+			.platform-link:hover,
 			.btn-copy:hover,
 			.btn-open:hover,
+			.btn-save:hover,
 			.btn-analyze:hover {
 				background: #f3f4f6;
 				border-color: #d1d5db;
@@ -214,6 +233,7 @@ import { SITE_TITLE } from '../consts';
 			.mode-button.active,
 			.button-primary,
 			.search-btn,
+			.btn-save,
 			.btn-analyze {
 				background: #111;
 				border-color: #111;
@@ -223,6 +243,7 @@ import { SITE_TITLE } from '../consts';
 			.mode-button.active:hover,
 			.button-primary:hover,
 			.search-btn:hover,
+			.btn-save:hover,
 			.btn-analyze:hover {
 				background: #333;
 				border-color: #333;
@@ -284,6 +305,14 @@ import { SITE_TITLE } from '../consts';
 				align-items: center;
 			}
 
+			.query-presets,
+			.platform-links {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 10px;
+				margin-bottom: 16px;
+			}
+
 			.search-input {
 				flex: 1;
 				min-width: 250px;
@@ -296,6 +325,14 @@ import { SITE_TITLE } from '../consts';
 			.sort-select {
 				width: auto;
 				min-width: 220px;
+				padding: 14px 18px;
+				border-radius: 999px;
+				background-color: #fcfcfc;
+			}
+
+			.year-select {
+				width: auto;
+				min-width: 150px;
 				padding: 14px 18px;
 				border-radius: 999px;
 				background-color: #fcfcfc;
@@ -448,6 +485,22 @@ import { SITE_TITLE } from '../consts';
 				font-weight: 700;
 			}
 
+			.save-status {
+				min-height: 1.4em;
+				margin: 10px 0 0;
+				color: #555;
+				font-size: 0.9rem;
+				font-weight: 700;
+			}
+
+			.save-status.success {
+				color: #255525;
+			}
+
+			.save-status.error {
+				color: #7a2626;
+			}
+
 			@media (max-width: 860px) {
 				.analyzer-grid {
 					grid-template-columns: 1fr;
@@ -481,6 +534,10 @@ import { SITE_TITLE } from '../consts';
 				.sort-select {
 					width: 100%;
 				}
+
+				.year-select {
+					width: 100%;
+				}
 			}
 		</style>
 	</head>
@@ -493,6 +550,11 @@ import { SITE_TITLE } from '../consts';
 			<p class="page-desc">
 				上傳或貼上一篇論文內容，先用八種固定視角做快速整理；也可以繼續用 OpenAlex 搜尋下一篇文獻。
 			</p>
+
+			<div class="page-actions">
+				<a href="/papers" class="button">我的文獻庫</a>
+				<a href="/dashboard" class="button">回到儀表板</a>
+			</div>
 
 			<section class="section" aria-labelledby="analyzerTitle">
 				<div class="section-heading">
@@ -567,7 +629,11 @@ import { SITE_TITLE } from '../consts';
 								<button type="button" class="button" id="downloadMarkdownButton">
 									下載結果
 								</button>
+								<button type="button" class="button button-primary" id="saveAnalysisButton">
+									儲存到文獻庫
+								</button>
 							</div>
+							<p class="save-status" id="saveAnalysisStatus" aria-live="polite"></p>
 							<div class="output-view" id="analysisOutput">
 								<p class="output-placeholder">
 									選擇分析方式後按下「產生分析」，這裡會顯示摘要、關鍵概念與可追問的研究問題。
@@ -588,6 +654,21 @@ import { SITE_TITLE } from '../consts';
 					</div>
 				</div>
 
+				<div class="query-presets" aria-label="常用研究主題">
+					<button type="button" class="preset-button" data-query="high entropy alloy density functional theory catalysis">
+						HEA + DFT + catalysis
+					</button>
+					<button type="button" class="preset-button" data-query="oxygen evolution reaction high entropy alloy">
+						OER 高熵合金
+					</button>
+					<button type="button" class="preset-button" data-query="hydrogen evolution reaction density functional theory">
+						HER + DFT
+					</button>
+					<button type="button" class="preset-button" data-query="VASP adsorption energy surface catalysis">
+						VASP adsorption
+					</button>
+				</div>
+
 				<div class="search-box">
 					<input
 						type="text"
@@ -600,7 +681,24 @@ import { SITE_TITLE } from '../consts';
 						<option value="cited_by_count:desc">依引用次數排序</option>
 						<option value="publication_year:desc">依年份排序</option>
 					</select>
+					<select id="yearSelect" class="year-select">
+						<option value="all">全部年份</option>
+						<option value="5">近 5 年</option>
+						<option value="10">近 10 年</option>
+					</select>
 					<button id="searchBtn" class="search-btn">搜尋論文</button>
+				</div>
+
+				<div class="platform-links" aria-label="外部文獻平台">
+					<a class="platform-link" data-platform-link="scholar" href="https://scholar.google.com/" target="_blank" rel="noreferrer">
+						Google Scholar
+					</a>
+					<a class="platform-link" data-platform-link="semantic" href="https://www.semanticscholar.org/" target="_blank" rel="noreferrer">
+						Semantic Scholar
+					</a>
+					<a class="platform-link" data-platform-link="crossref" href="https://search.crossref.org/" target="_blank" rel="noreferrer">
+						Crossref
+					</a>
 				</div>
 
 				<label class="oa-toggle">
@@ -672,9 +770,12 @@ import { SITE_TITLE } from '../consts';
 					copyPromptButton: document.querySelector('#copyPromptButton'),
 					copyMarkdownButton: document.querySelector('#copyMarkdownButton'),
 					downloadMarkdownButton: document.querySelector('#downloadMarkdownButton'),
+					saveAnalysisButton: document.querySelector('#saveAnalysisButton'),
+					saveAnalysisStatus: document.querySelector('#saveAnalysisStatus'),
 					analysisOutput: document.querySelector('#analysisOutput'),
 					searchInput: document.querySelector('#paperSearchInput'),
 					sortSelect: document.querySelector('#sortSelect'),
+					yearSelect: document.querySelector('#yearSelect'),
 					oaCheckbox: document.querySelector('#oaCheckbox'),
 					searchBtn: document.querySelector('#searchBtn'),
 					statusMsg: document.querySelector('#statusMsg'),
@@ -688,7 +789,9 @@ import { SITE_TITLE } from '../consts';
 				let currentMarkdown = '';
 				let currentQuery = '';
 				let currentSort = '';
+				let currentYearWindow = 'all';
 				let currentIsOa = false;
+				let currentPaperPayload = null;
 
 				const escapeHtml = (value) =>
 					String(value)
@@ -705,6 +808,33 @@ import { SITE_TITLE } from '../consts';
 				const setSearchStatus = (message) => {
 					refs.statusMsg.textContent = message;
 				};
+
+				const setSaveStatus = (message, type = '') => {
+					refs.saveAnalysisStatus.textContent = message;
+					refs.saveAnalysisStatus.classList.toggle('success', type === 'success');
+					refs.saveAnalysisStatus.classList.toggle('error', type === 'error');
+				};
+
+				const splitQueryTags = (value) =>
+					value
+						.split(/[,\s]+/u)
+						.map((tag) => tag.trim())
+						.filter((tag) => tag.length >= 3)
+						.slice(0, 8);
+
+				const uniqueTags = (items) =>
+					items
+						.map((item) => String(item || '').trim())
+						.filter((item, index, list) => item && list.indexOf(item) === index)
+						.slice(0, 24);
+
+				const createSlug = (value) =>
+					String(value || '')
+						.trim()
+						.toLowerCase()
+						.replace(/[^\p{Letter}\p{Number}]+/gu, '-')
+						.replace(/^-+|-+$/g, '')
+						.slice(0, 90);
 
 				const splitSentences = (text) =>
 					text
@@ -1070,6 +1200,118 @@ ${bulletList(context.keySentences.slice(0, 5), '目前文字不足，請補上�
 					return `${mode.prompt}\n\n論文標題：${refs.paperTitle.value.trim() || '未命名論文'}\n引用資訊：${refs.paperCitation.value.trim() || '尚未填寫'}\n\n論文內容：\n${refs.paperText.value.trim()}`;
 				};
 
+				const activeModeLabel = () =>
+					(modes.find((item) => item.id === activeMode) ?? modes[0]).label;
+
+				const savePaperPayload = async (payload, { button, statusElement } = {}) => {
+					const originalText = button?.textContent || '';
+					if (button) {
+						button.disabled = true;
+						button.textContent = '儲存中';
+					}
+					if (statusElement) {
+						statusElement.textContent = '儲存中。';
+						statusElement.classList.remove('success', 'error');
+					}
+
+					try {
+						const response = await fetch('/api/admin/papers', {
+							method: 'POST',
+							headers: { 'content-type': 'application/json' },
+							body: JSON.stringify(payload),
+						});
+						const result = await response.json();
+						if (!response.ok || !result.ok) {
+							throw new Error(result.message || result.error || 'Save failed.');
+						}
+
+						if (statusElement) {
+							statusElement.textContent = '已儲存到我的文獻庫。';
+							statusElement.classList.add('success');
+						}
+						if (button) button.textContent = '已儲存';
+
+						window.setTimeout(() => {
+							if (button) button.textContent = originalText;
+						}, 1600);
+
+						return result.paper;
+					} catch {
+						if (statusElement) {
+							statusElement.textContent = '儲存失敗，請確認已登入本人帳號。';
+							statusElement.classList.add('error');
+						}
+						if (button) button.textContent = '需登入';
+						window.setTimeout(() => {
+							if (button) button.textContent = originalText;
+						}, 1800);
+						return null;
+					} finally {
+						if (button) button.disabled = false;
+					}
+				};
+
+				const buildCurrentPaperPayload = () => {
+					const text = refs.paperText.value.trim();
+					const context = createContext();
+					const title = refs.paperTitle.value.trim() || currentPaperPayload?.title || '未命名論文';
+					const citation = refs.paperCitation.value.trim() || currentPaperPayload?.citation || '';
+					const keywordTags = extractKeywords(text).slice(0, 8);
+					const basePayload = currentPaperPayload
+						? { ...currentPaperPayload }
+						: {
+								source: 'manual',
+								source_id: '',
+								doi: '',
+								title,
+								authors: [],
+								publication_year: null,
+								journal: '',
+								abstract: '',
+								url: '',
+								citation,
+								cited_by_count: 0,
+								is_open_access: false,
+								reading_status: 'reading',
+								tags: [],
+								visibility: 'private',
+							};
+
+					return {
+						...basePayload,
+						title,
+						citation,
+						abstract: context.abstract || text.slice(0, 8000),
+						reading_status: 'reading',
+						tags: uniqueTags([...(basePayload.tags || []), ...keywordTags]),
+						visibility: 'private',
+						analysis: {
+							analysis_mode: activeMode,
+							analysis_title: activeModeLabel(),
+							analysis_markdown: currentMarkdown,
+							source_excerpt: text.slice(0, 40_000),
+						},
+					};
+				};
+
+				const saveCurrentAnalysis = async () => {
+					if (!currentMarkdown) {
+						analyze();
+					}
+
+					if (!currentMarkdown) {
+						setSaveStatus('請先貼上論文文字並產生分析。', 'error');
+						return;
+					}
+
+					const payload = buildCurrentPaperPayload();
+					const savedPaper = await savePaperPayload(payload, {
+						button: refs.saveAnalysisButton,
+						statusElement: refs.saveAnalysisStatus,
+					});
+					if (savedPaper) currentPaperPayload = { ...payload, source_id: savedPaper.source_id };
+				};
+
 				const downloadMarkdown = () => {
 					if (!currentMarkdown) return;
 					const blob = new Blob([currentMarkdown], { type: 'text/markdown;charset=utf-8' });
@@ -1135,6 +1377,7 @@ ${bulletList(context.keySentences.slice(0, 5), '目前文字不足，請補上�
 					readFile(file)
 						.then((text) => {
 							refs.paperText.value = text;
+							currentPaperPayload = null;
 							if (!refs.paperTitle.value.trim()) {
 								refs.paperTitle.value = file.name.replace(/\.[^.]+$/, '');
 							}
@@ -1152,6 +1395,13 @@ ${bulletList(context.keySentences.slice(0, 5), '目前文字不足，請補上�
 					copyText(activePrompt(), '分析提示已複製。');
 				});
 				refs.downloadMarkdownButton.addEventListener('click', downloadMarkdown);
+				refs.saveAnalysisButton.addEventListener('click', saveCurrentAnalysis);
+				refs.paperTitle.addEventListener('input', () => {
+					currentPaperPayload = null;
+				});
+				refs.paperCitation.addEventListener('input', () => {
+					currentPaperPayload = null;
+				});
 
 				const reconstructAbstract = (invertedIndex) => {
 					if (!invertedIndex) return '此篇文獻未提供摘要資料。';
@@ -1182,6 +1432,50 @@ ${bulletList(context.keySentences.slice(0, 5), '目前文字不足，請補上�
 					const journal = paper.primary_location?.source?.display_name || '';
 					const doi = paper.doi ? ` ${paper.doi}` : '';
 					return `${authors} (${year}). ${title}. ${journal ? `${journal}.` : ''}${doi}`;
+				};
+
+				const extractAuthors = (paper) => {
+					if (!Array.isArray(paper.authorships)) return [];
+
+					return paper.authorships
+						.map((item) => item.author?.display_name)
+						.filter(Boolean)
+						.slice(0, 40);
+				};
+
+				const extractConceptTags = (paper) => {
+					if (!Array.isArray(paper.concepts)) return [];
+
+					return paper.concepts
+						.map((concept) => concept.display_name)
+						.filter(Boolean)
+						.slice(0, 6);
+				};
+
+				const getPaperLink = (paper) =>
+					paper.primary_location?.landing_page_url || paper.doi || paper.id || '';
+
+				const buildSearchPaperPayload = (paper, abstractText, citationText) => {
+					const queryTags = splitQueryTags(currentQuery);
+					const conceptTags = extractConceptTags(paper);
+
+					return {
+						source: 'openalex',
+						source_id: paper.id || '',
+						doi: paper.doi || '',
+						title: paper.title || '無標題',
+						authors: extractAuthors(paper),
+						publication_year: paper.publication_year || null,
+						journal: paper.primary_location?.source?.display_name || '',
+						abstract: abstractText === '此篇文獻未提供摘要資料。' ? '' : abstractText,
+						url: getPaperLink(paper),
+						citation: citationText,
+						cited_by_count: paper.cited_by_count || 0,
+						is_open_access: Boolean(paper.open_access?.is_oa),
+						reading_status: 'to_read',
+						tags: uniqueTags([...queryTags, ...conceptTags]),
+						visibility: 'private',
+					};
 				};
 
 				const generateRecommendations = (paper, index, pageNumber) => {
@@ -1252,12 +1546,13 @@ ${bulletList(context.keySentences.slice(0, 5), '目前文字不足，請補上�
 					card.className = 'paper-card';
 
 					const title = paper.title || '無標題';
-					const link = paper.doi || paper.id || '#';
+					const link = getPaperLink(paper) || '#';
 					const year = paper.publication_year || '未知年份';
 					const citedBy = paper.cited_by_count || 0;
 					const journal = paper.primary_location?.source?.display_name || 'Unknown Journal';
 					const abstractText = reconstructAbstract(paper.abstract_inverted_index);
 					const citationText = generateCitation(paper);
+					const paperPayload = buildSearchPaperPayload(paper, abstractText, citationText);
 					const lensHref = `/paper-lens?title=${encodeURIComponent(title)}&citation=${encodeURIComponent(citationText)}`;
 					const score = calculateDisplayScore(paper, (pageNumber - 1) * 10 + index);
 					const reasons = generateRecommendations(paper, index, pageNumber);
@@ -1325,6 +1620,7 @@ ${bulletList(context.keySentences.slice(0, 5), '目前文字不足，請補上�
 					analyzeButton.className = 'btn-analyze';
 					analyzeButton.textContent = '帶入分析器';
 					analyzeButton.addEventListener('click', () => {
+						currentPaperPayload = paperPayload;
 						refs.paperTitle.value = title;
 						refs.paperCitation.value = citationText;
 						refs.paperText.value = abstractText;
@@ -1332,6 +1628,14 @@ ${bulletList(context.keySentences.slice(0, 5), '目前文字不足，請補上�
 						document
 							.querySelector('#analyzerTitle')
 							?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+					});
+
+					const saveButton = document.createElement('button');
+					saveButton.type = 'button';
+					saveButton.className = 'btn-save';
+					saveButton.textContent = '儲存文獻';
+					saveButton.addEventListener('click', () => {
+						savePaperPayload(paperPayload, { button: saveButton });
 					});
 
 					const paperLensLink = document.createElement('a');
@@ -1345,7 +1649,7 @@ ${bulletList(context.keySentences.slice(0, 5), '目前文字不足，請補上�
 					openLink.target = '_blank';
 					openLink.rel = 'noreferrer';
 					openLink.textContent = 'Open Paper';
-					actions.append(copyButton, analyzeButton, paperLensLink, openLink);
+					actions.append(copyButton, analyzeButton, saveButton, paperLensLink, openLink);
 
 					card.append(header);
 					if (pills.childElementCount > 0) card.append(pills);
@@ -1357,6 +1661,7 @@ ${bulletList(context.keySentences.slice(0, 5), '目前文字不足，請補上�
 					if (pageNumber === 1) {
 						currentQuery = refs.searchInput.value.trim();
 						currentSort = refs.sortSelect.value;
+						currentYearWindow = refs.yearSelect.value;
 						currentIsOa = refs.oaCheckbox.checked;
 					}
 
@@ -1370,7 +1675,13 @@ ${bulletList(context.keySentences.slice(0, 5), '目前文字不足，請補上�
 						let url = `https://api.openalex.org/works?search=${encodeURIComponent(
 							currentQuery,
 						)}&per-page=10&page=${pageNumber}&sort=${encodeURIComponent(currentSort)}`;
-						if (currentIsOa) url += '&filter=is_oa:true';
+						const filters = [];
+						if (currentIsOa) filters.push('is_oa:true');
+						if (currentYearWindow !== 'all') {
+							const year = new Date().getFullYear() - Number(currentYearWindow) + 1;
+							filters.push(`from_publication_date:${year}-01-01`);
+						}
+						if (filters.length > 0) url += `&filter=${filters.join(',')}`;
 
 						const response = await fetch(url);
 						const data = await response.json();
@@ -1394,18 +1705,60 @@ ${bulletList(context.keySentences.slice(0, 5), '目前文字不足，請補上�
 					}
 				};
 
+				const updatePlatformLinks = () => {
+					const query = refs.searchInput.value.trim();
+					const encodedQuery = encodeURIComponent(query || 'high entropy alloy density functional theory catalysis');
+					const links = document.querySelectorAll('[data-platform-link]');
+
+					links.forEach((link) => {
+						if (!(link instanceof HTMLAnchorElement)) return;
+
+						if (link.dataset.platformLink === 'scholar') {
+							link.href = `https://scholar.google.com/scholar?q=${encodedQuery}`;
+						}
+						if (link.dataset.platformLink === 'semantic') {
+							link.href = `https://www.semanticscholar.org/search?q=${encodedQuery}&sort=relevance`;
+						}
+						if (link.dataset.platformLink === 'crossref') {
+							link.href = `https://search.crossref.org/?q=${encodedQuery}`;
+						}
+					});
+				};
+
 				refs.searchBtn.addEventListener('click', () => searchPapers(1));
 				refs.searchInput.addEventListener('keydown', (event) => {
 					if (event.key === 'Enter') searchPapers(1);
 				});
+				refs.searchInput.addEventListener('input', updatePlatformLinks);
 				refs.sortSelect.addEventListener('change', () => {
+					if (refs.searchInput.value.trim()) searchPapers(1);
+				});
+				refs.yearSelect.addEventListener('change', () => {
 					if (refs.searchInput.value.trim()) searchPapers(1);
 				});
 				refs.oaCheckbox.addEventListener('change', () => {
 					if (refs.searchInput.value.trim()) searchPapers(1);
 				});
+				document.querySelectorAll('[data-query]').forEach((button) => {
+					if (!(button instanceof HTMLElement)) return;
+					button.addEventListener('click', () => {
+						refs.searchInput.value = button.dataset.query || '';
+						updatePlatformLinks();
+						searchPapers(1);
+					});
+				});
+
+				const initialParams = new URLSearchParams(window.location.search);
+				const initialTitle = initialParams.get('title');
+				const initialCitation = initialParams.get('citation');
+				if (initialTitle) {
+					refs.paperTitle.value = initialTitle;
+					refs.searchInput.value = initialTitle;
+				}
+				if (initialCitation) refs.paperCitation.value = initialCitation;
 
 				renderModes();
+				updatePlatformLinks();
 			});
 		</script>
 	</body>

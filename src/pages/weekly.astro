@@ -4,19 +4,25 @@ import Footer from '../components/Footer.astro';
 import Header from '../components/Header.astro';
 import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
 import jsonReports from '../data/weekly-reports.json';
+import { readAuthSession } from '../lib/auth/session';
 import { listJournalEntries } from '../lib/database/journal';
+import { listPapers } from '../lib/database/papers';
 import { listDatabaseTasks } from '../lib/database/tasks';
 import { listDatabaseWeeklyReports } from '../lib/database/weekly-reports';
 import { buildWeeklyOutline } from '../lib/weekly/outline';
 import type { WeeklyOutline } from '../lib/weekly/outline';
 import type {
 	JournalEntry,
+	Paper,
 	TaskWithTags,
 	WeeklyReportWithSections,
 } from '../types/database';
 import { env } from 'cloudflare:workers';
 
 export const prerender = false;
+
+const session = await readAuthSession(Astro.request, env.SESSION_SECRET);
+const isOwner = session?.role === 'owner';
 
 type JsonWeeklyReport = (typeof jsonReports)[number];
 
@@ -58,6 +64,7 @@ const normalizeDatabaseReport = (
 
 const loadWeeklyData = async (): Promise<{
 	journals: JournalEntry[];
+	papers: Paper[];
 	reports: WeeklyReportView[];
 	tasks: TaskWithTags[];
 }> => {
@@ -65,20 +72,23 @@ const loadWeeklyData = async (): Promise<{
 	if (!db) {
 		return {
 			journals: [],
+			papers: [],
 			reports: jsonReports.map(normalizeJsonReport),
 			tasks: [],
 		};
 	}
 
 	try {
-		const [databaseTasks, databaseReports, journals] = await Promise.all([
+		const [databaseTasks, databaseReports, journals, papers] = await Promise.all([
 			listDatabaseTasks(db),
 			listDatabaseWeeklyReports(db),
 			listJournalEntries(db, { includeDrafts: false, limit: 100 }),
+			listPapers(db, { includePrivate: isOwner, limit: 100 }),
 		]);
 
 		return {
 			journals,
+			papers,
 			reports: databaseReports.map(normalizeDatabaseReport),
 			tasks: databaseTasks,
 		};
@@ -86,14 +96,15 @@ const loadWeeklyData = async (): Promise<{
 		console.error('Failed to load D1 weekly data. Falling back to JSON reports.', error);
 		return {
 			journals: [],
+			papers: [],
 			reports: jsonReports.map(normalizeJsonReport),
 			tasks: [],
 		};
 	}
 };
 
-const { journals, reports, tasks } = await loadWeeklyData();
-const outline: WeeklyOutline = buildWeeklyOutline({ journals, tasks });
+const { journals, papers, reports, tasks } = await loadWeeklyData();
+const outline: WeeklyOutline = buildWeeklyOutline({ journals, papers, tasks });
 const sortedReports = [...reports].sort((a, b) => b.week.localeCompare(a.week));
 
 const reportSections = [
@@ -309,6 +320,7 @@ const reportSections = [
 			<div class="page-actions">
 				<a href="/tasks" class="action-link">查看任務</a>
 				<a href="/journal" class="action-link">查看研究筆記</a>
+				<a href="/papers" class="action-link">查看文獻庫</a>
 				<a href="/dashboard" class="action-link">回到儀表板</a>
 			</div>
 

@@ -1,4 +1,4 @@
-import type { JournalEntry, TaskWithTags } from '../../types/database';
+import type { JournalEntry, Paper, TaskWithTags } from '../../types/database';
 
 export type WeeklyOutline = {
 	week: string;
@@ -74,6 +74,12 @@ const journalBelongsToWeek = (
 	end: string,
 ): boolean => entry.entry_date >= start && entry.entry_date <= end;
 
+const paperBelongsToWeek = (
+	paper: Paper,
+	start: string,
+	end: string,
+): boolean => paper.saved_at.slice(0, 10) >= start && paper.saved_at.slice(0, 10) <= end;
+
 const describeTask = (task: TaskWithTags): string => {
 	const meta = [task.category, task.priority === 'high' ? '高優先' : '']
 		.filter(Boolean)
@@ -81,14 +87,28 @@ const describeTask = (task: TaskWithTags): string => {
 	return meta ? `${task.title}（${meta}）` : task.title;
 };
 
+const describePaper = (paper: Paper): string => {
+	const meta = [
+		paper.publication_year ? String(paper.publication_year) : '',
+		paper.journal,
+		paper.analyses.length > 0 ? `${paper.analyses.length} 份分析` : '',
+	]
+		.filter(Boolean)
+		.join('，');
+
+	return meta ? `${paper.title}（${meta}）` : paper.title;
+};
+
 export const buildWeeklyOutline = ({
 	journals,
 	now = new Date(),
+	papers = [],
 	tasks,
 	week = getIsoWeek(now),
 }: {
 	journals: JournalEntry[];
 	now?: Date;
+	papers?: Paper[];
 	tasks: TaskWithTags[];
 	week?: string;
 }): WeeklyOutline => {
@@ -98,6 +118,9 @@ export const buildWeeklyOutline = ({
 	);
 	const weekJournals = journals.filter((entry) =>
 		journalBelongsToWeek(entry, range.start, range.end),
+	);
+	const weekPapers = papers.filter((paper) =>
+		paperBelongsToWeek(paper, range.start, range.end),
 	);
 
 	const completedTasks = weekTasks
@@ -116,15 +139,21 @@ export const buildWeeklyOutline = ({
 	const journalSummaries = weekJournals.map((entry) =>
 		entry.summary ? `${entry.title}：${entry.summary}` : entry.title,
 	);
+	const paperSummaries = weekPapers.map(describePaper);
+	const activePapers = weekPapers
+		.filter((paper) => paper.reading_status === 'reading' || paper.reading_status === 'important')
+		.map(describePaper);
 
 	const completed = completedTasks.length
 		? completedTasks
 		: ['本週尚未標記完成任務，可從任務管理頁更新完成狀態。'];
-	const progress = unique([...doingTasks, ...journalSummaries]).slice(0, 6);
+	const progress = unique([...doingTasks, ...journalSummaries, ...paperSummaries]).slice(0, 6);
 	const unfinished = todoTasks.length
 		? todoTasks
 		: ['目前沒有本週未開始任務。'];
-	const next = highPendingTasks.length
+	const next = activePapers.length
+		? activePapers.slice(0, 3).map((paper) => `繼續閱讀與整理：${paper}`)
+		: highPendingTasks.length
 		? highPendingTasks
 		: todoTasks.length
 			? todoTasks.slice(0, 3)
@@ -133,10 +162,12 @@ export const buildWeeklyOutline = ({
 	const categories = unique([
 		...weekTasks.map((task) => task.category),
 		...weekJournals.map((entry) => entry.category),
+		...(weekPapers.length > 0 ? ['文獻閱讀'] : []),
 	]);
 	const tags = unique([
 		...weekTasks.flatMap((task) => task.tags),
 		...weekJournals.flatMap((entry) => entry.tags),
+		...weekPapers.flatMap((paper) => paper.tags),
 	]);
 
 	return {
@@ -144,11 +175,11 @@ export const buildWeeklyOutline = ({
 		dateRange: `${range.start} ~ ${range.end}`,
 		title: `${week} 自動週報大綱`,
 		summary:
-			weekTasks.length || weekJournals.length
-				? `本週共有 ${completedTasks.length} 項完成任務、${doingTasks.length} 項進行中任務，並整理 ${weekJournals.length} 篇研究日誌。`
-				: '本週尚未累積任務或研究日誌，新增內容後這裡會自動整理大綱。',
+			weekTasks.length || weekJournals.length || weekPapers.length
+				? `本週共有 ${completedTasks.length} 項完成任務、${doingTasks.length} 項進行中任務，整理 ${weekJournals.length} 篇研究日誌，並保存 ${weekPapers.length} 篇文獻。`
+				: '本週尚未累積任務、研究日誌或文獻，新增內容後這裡會自動整理大綱。',
 		completed,
-		progress: progress.length ? progress : ['目前沒有進行中任務或本週日誌摘要。'],
+		progress: progress.length ? progress : ['目前沒有進行中任務、本週日誌或文獻摘要。'],
 		problems:
 			highPendingTasks.length > 0
 				? ['高優先任務尚未完成，週末回顧時可優先拆解阻礙。']

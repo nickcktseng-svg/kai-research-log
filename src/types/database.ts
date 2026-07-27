@@ -123,3 +123,88 @@ export interface UpdateJournalEntryInput {
 	status?: JournalStatus;
 	entry_date?: string;
 }
+
+export type PaperSource = 'manual' | 'openalex' | 'doi' | 'url';
+export type PaperReadingStatus =
+	| 'to_read'
+	| 'reading'
+	| 'finished'
+	| 'important';
+export type PaperVisibility = 'private' | 'public';
+
+export interface DatabasePaper {
+	id: string;
+	source_key: string;
+	source: PaperSource;
+	source_id: string;
+	doi: string;
+	title: string;
+	authors_json: string;
+	publication_year: number | null;
+	journal: string;
+	abstract: string;
+	url: string;
+	citation: string;
+	cited_by_count: number;
+	is_open_access: 0 | 1;
+	reading_status: PaperReadingStatus;
+	tags_json: string;
+	notes: string;
+	visibility: PaperVisibility;
+	saved_at: string;
+	created_at: string;
+	updated_at: string;
+}
+
+export interface DatabasePaperAnalysis {
+	id: string;
+	paper_id: string;
+	analysis_mode: string;
+	analysis_title: string;
+	analysis_markdown: string;
+	source_excerpt: string;
+	created_at: string;
+	updated_at: string;
+}
+
+export interface PaperAnalysis extends DatabasePaperAnalysis {}
+
+export interface Paper extends Omit<DatabasePaper, 'authors_json' | 'tags_json'> {
+	authors: string[];
+	tags: string[];
+	analyses: PaperAnalysis[];
+}
+
+export interface CreatePaperAnalysisInput {
+	analysis_mode: string;
+	analysis_title: string;
+	analysis_markdown: string;
+	source_excerpt: string;
+}
+
+export interface CreatePaperInput {
+	source: PaperSource;
+	source_id: string;
+	doi: string;
+	title: string;
+	authors: string[];
+	publication_year: number | null;
+	journal: string;
+	abstract: string;
+	url: string;
+	citation: string;
+	cited_by_count: number;
+	is_open_access: boolean;
+	reading_status: PaperReadingStatus;
+	tags: string[];
+	notes?: string;
+	visibility: PaperVisibility;
+	analysis?: CreatePaperAnalysisInput;
+}
+
+export interface UpdatePaperInput {
+	reading_status?: PaperReadingStatus;
+	tags?: string[];
+	notes?: string;
+	visibility?: PaperVisibility;
+}

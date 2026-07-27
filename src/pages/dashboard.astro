@@ -7,11 +7,14 @@ import Header from '../components/Header.astro';
 import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
 import jsonTasks from '../data/tasks.json';
 import jsonReports from '../data/weekly-reports.json';
+import { readAuthSession } from '../lib/auth/session';
 import { listJournalEntries } from '../lib/database/journal';
+import { listPapers } from '../lib/database/papers';
 import { listDatabaseTasks } from '../lib/database/tasks';
 import { listDatabaseWeeklyReports } from '../lib/database/weekly-reports';
 import type {
 	JournalEntry,
+	Paper,
 	TaskPriority,
 	TaskStatus,
 	TaskType,
@@ -21,6 +24,9 @@ import type {
 import { env } from 'cloudflare:workers';
 
 export const prerender = false;
+
+const session = await readAuthSession(Astro.request, env.SESSION_SECRET);
+const isOwner = session?.role === 'owner';
 
 type JsonTask = {
 	id: string;
@@ -110,6 +116,7 @@ const normalizeDatabaseReport = (
 
 const loadDashboardData = async (): Promise<{
 	journals: JournalEntry[];
+	papers: Paper[];
 	reports: WeeklyReportView[];
 	tasks: TaskView[];
 }> => {
@@ -120,20 +127,23 @@ const loadDashboardData = async (): Promise<{
 	if (!db) {
 		return {
 			journals: [],
+			papers: [],
 			reports: staticReports,
 			tasks: staticTasks.map(normalizeJsonTask),
 		};
 	}
 
 	try {
-		const [databaseTasks, databaseReports, journals] = await Promise.all([
+		const [databaseTasks, databaseReports, journals, papers] = await Promise.all([
 			listDatabaseTasks(db),
 			listDatabaseWeeklyReports(db),
 			listJournalEntries(db, { includeDrafts: false, limit: 3 }),
+			listPapers(db, { includePrivate: isOwner, limit: 3 }),
 		]);
 
 		return {
 			journals,
+			papers,
 			reports: databaseReports.map(normalizeDatabaseReport),
 			tasks: databaseTasks.map(normalizeDatabaseTask),
 		};
@@ -141,13 +151,14 @@ const loadDashboardData = async (): Promise<{
 		console.error('Failed to load D1 dashboard data. Falling back to JSON.', error);
 		return {
 			journals: [],
+			papers: [],
 			reports: staticReports,
 			tasks: staticTasks.map(normalizeJsonTask),
 		};
 	}
 };
 
-const { journals, reports, tasks } = await loadDashboardData();
+const { journals, papers, reports, tasks } = await loadDashboardData();
 
 const sortTasks = (taskList: TaskView[]) =>
 	[...taskList].sort((a, b) => {
@@ -180,6 +191,7 @@ const latestReport = [...reports].sort((a, b) =>
 )[0];
 
 const latestJournalEntries = journals.slice(0, 3);
+const latestPapers = papers.slice(0, 3);
 
 const latestPosts = (await getCollection('blog', ({ data }) => !data.draft))
 	.sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf())
@@ -221,7 +233,29 @@ const quickLinks = [
 		description: '進入文獻工具與搜尋入口。',
 		href: '/literature',
 	},
+	{
+		title: '我的文獻庫',
+		description: '查看已保存論文、閱讀狀態與分析結果。',
+		href: '/papers',
+	},
 ];
+
+const readingStatusLabels = {
+	to_read: '待閱讀',
+	reading: '閱讀中',
+	finished: '已讀完',
+	important: '重要文獻',
+};
+
+const formatAuthors = (authors: string[]) => {
+	if (authors.length === 0) return '作者未記錄';
+	if (authors.length <= 3) return authors.join(', ');
+
+	return `${authors.slice(0, 3).join(', ')} et al.`;
+};
+
+const truncate = (value: string, maxLength: number) =>
+	value.length > maxLength ? `${value.slice(0, maxLength).trim()}...` : value;
 ---
 
 <!doctype html>
@@ -779,6 +813,52 @@ const quickLinks = [
 						</div>
 					) : (
 						<p class="empty-state">目前還沒有已發布的研究筆記。</p>
+					)
+				}
+			</section>
+
+			<section class="dashboard-section" aria-labelledby="latest-papers">
+				<div class="section-heading">
+					<div>
+						<h2 id="latest-papers" class="section-title">最新收藏文獻</h2>
+						<p class="section-desc">近期保存、準備繼續閱讀或已整理分析的論文。</p>
+					</div>
+					<a href="/papers" class="section-link">查看文獻庫</a>
+				</div>
+
+				{
+					latestPapers.length > 0 ? (
+						<div class="post-grid">
+							{latestPapers.map((paper) => (
+								<article class="post-card">
+									<div class="meta-row">
+										<span class="pill pill-dark">
+											{readingStatusLabels[paper.reading_status] ?? paper.reading_status}
+										</span>
+										{paper.publication_year ? (
+											<span class="pill pill-light">{paper.publication_year}</span>
+										) : null}
+										{paper.tags.slice(0, 3).map((tag) => (
+											<span class="pill pill-light">{tag}</span>
+										))}
+									</div>
+
+									<h3 class="post-title">
+										<a href="/papers">{paper.title}</a>
+									</h3>
+									<p class="post-description">
+										{paper.abstract
+											? truncate(paper.abstract, 220)
+											: formatAuthors(paper.authors)}
+									</p>
+									<p class="post-date">
+										{paper.journal || '期刊未記錄'} · 引用 {paper.cited_by_count}
+									</p>
+								</article>
+							))}
+						</div>
+					) : (
+						<p class="empty-state">目前還沒有可顯示的收藏文獻。</p>
 					)
 				}
 			</section>

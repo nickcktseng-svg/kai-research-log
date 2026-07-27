@@ -1,6 +1,6 @@
 # Cloudflare D1 設定說明
 
-這個資料夾記錄 D1 基礎架構與資料同步流程。目前 `/tasks`、`/weekly`、`/dashboard` 與 `/journal` 會優先讀取 D1。當 D1 binding 或查詢不可用時，任務會回退到 `src/data/tasks.json`，週報會回退到 `src/data/weekly-reports.json`。
+這個資料夾記錄 D1 基礎架構與資料同步流程。目前 `/tasks`、`/weekly`、`/dashboard`、`/journal` 與 `/papers` 會優先讀取 D1。當 D1 binding 或查詢不可用時，任務會回退到 `src/data/tasks.json`，週報會回退到 `src/data/weekly-reports.json`。
 
 ## 人工設定步驟
 
@@ -130,6 +130,7 @@ npm run preview
 /api/db/tasks
 /api/db/weekly-reports
 /api/db/journal
+/api/db/papers
 ```
 
 這些 API 只讀取 D1，不會新增、修改或刪除資料。
@@ -267,6 +268,54 @@ curl -X PATCH http://localhost:8787/api/admin/journal/<journal-id> \
   }'
 ```
 
+17. 測試受保護文獻庫 API
+
+新增或更新收藏文獻：
+
+```bash
+curl -X POST http://localhost:8787/api/admin/papers \
+  -H "Authorization: Bearer $TASK_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "source": "manual",
+    "title": "測試文獻",
+    "authors": ["Kai"],
+    "publication_year": 2026,
+    "journal": "Research Notes",
+    "abstract": "確認 D1 可以儲存文獻資料。",
+    "citation": "Kai (2026). 測試文獻.",
+    "reading_status": "to_read",
+    "tags": ["DFT", "catalysis"],
+    "visibility": "private"
+  }'
+```
+
+更新閱讀狀態與筆記：
+
+```bash
+curl -X PATCH http://localhost:8787/api/admin/papers/<paper-id> \
+  -H "Authorization: Bearer $TASK_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "reading_status": "reading",
+    "notes": "這篇文獻和目前研究題目相關，之後要回來看方法段落。"
+  }'
+```
+
+新增一筆本地分析結果：
+
+```bash
+curl -X POST http://localhost:8787/api/admin/papers/<paper-id>/analyses \
+  -H "Authorization: Bearer $TASK_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "analysis_mode": "quick",
+    "analysis_title": "五分鐘速覽",
+    "analysis_markdown": "## 測試分析\n\n- 這是一筆本地分析結果。",
+    "source_excerpt": "本地貼上的摘要或全文節錄。"
+  }'
+```
+
 如果尚未設定 `SESSION_SECRET` 與 `TASK_API_TOKEN`，受保護 API 會回傳 `auth_unconfigured`。如果登入狀態、token 錯誤或缺少授權資訊，會回傳 `unauthorized`。
 
 ## 目前限制
@@ -275,7 +324,9 @@ curl -X PATCH http://localhost:8787/api/admin/journal/<journal-id> \
 - `/weekly` 目前會讀 D1 週報，D1 不可用時回退到 `weekly-reports.json`。
 - `/dashboard` 目前會讀 D1 任務、週報與研究筆記，D1 不可用時回退到 JSON。
 - `/journal` 是 D1 版研究筆記，只有已發布筆記會公開顯示。
-- 目前新增的寫入能力只限受保護的任務 API 與研究筆記 API，而且必須具備本人登入 session 或 `TASK_API_TOKEN`。
+- `/papers` 是 D1 版文獻庫，本人登入後可以查看私人文獻並編輯閱讀狀態、標籤與筆記；訪客只會看到公開文獻。
+- `/literature` 的文獻分析目前仍是瀏覽器端本地規則式整理，沒有把上傳文件送到外部 AI API。
+- 目前新增的寫入能力只限受保護的任務 API、研究筆記 API 與文獻庫 API，而且必須具備本人登入 session 或 `TASK_API_TOKEN`。
 - `/tasks/admin/` 是本人登入後使用的任務管理頁，目前可新增任務、標記完成與清空任務。
 - `/journal/admin/` 是本人登入後使用的研究筆記撰寫頁，目前可建立草稿、發布筆記，並可貼入小型圖片。
 - `db/seed.sql` 是人工/部署流程使用的資料匯入檔，不是公開寫入 API。
