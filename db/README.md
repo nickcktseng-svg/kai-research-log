@@ -1,6 +1,6 @@
 # Cloudflare D1 設定說明
 
-這個資料夾記錄 D1 基礎架構與資料同步流程。目前 `/tasks` 會優先讀取 D1，當 D1 binding 或查詢不可用時才回退到 `src/data/tasks.json`。`/weekly` 與 `/dashboard` 目前仍使用 `src/data/weekly-reports.json` 與 `src/data/tasks.json`。
+這個資料夾記錄 D1 基礎架構與資料同步流程。目前 `/tasks`、`/weekly`、`/dashboard` 與 `/journal` 會優先讀取 D1。當 D1 binding 或查詢不可用時，任務會回退到 `src/data/tasks.json`，週報會回退到 `src/data/weekly-reports.json`。
 
 ## 人工設定步驟
 
@@ -80,7 +80,23 @@ npm run db:remote:seed
 
 `db/seed.sql` 可重複執行。相同 ID 的任務與週報會更新，對應的 tags、categories 與週報 sections 會依照目前 JSON 重新建立。因為 `/tasks` 優先讀取 D1，遠端 D1 seed 或受保護任務 API 寫入後，任務頁會反映 D1 中的資料。
 
-10. 本機測試
+10. 清空任務資料
+
+目前 `src/data/tasks.json` 已清空。若遠端 D1 裡仍有舊任務，可以執行：
+
+```bash
+npm run db:remote:clear-tasks
+```
+
+本機 D1 可以執行：
+
+```bash
+npm run db:local:clear-tasks
+```
+
+這只會刪除 `tasks` 與 `task_tags`，不會刪除週報或研究筆記。
+
+11. 本機測試
 
 ```bash
 npm run dev
@@ -93,7 +109,7 @@ npm run build
 npm run preview
 ```
 
-11. 測試 health API
+12. 測試 health API
 
 ```text
 /api/health
@@ -108,14 +124,15 @@ npm run preview
 }
 ```
 
-12. 測試 D1 只讀資料 API
+13. 測試 D1 只讀資料 API
 
 ```text
 /api/db/tasks
 /api/db/weekly-reports
+/api/db/journal
 ```
 
-這兩個 API 只讀取 D1，不會新增、修改或刪除資料。
+這些 API 只讀取 D1，不會新增、修改或刪除資料。
 
 如果尚未設定 `DB` binding，或 D1 查詢失敗，會回傳：
 
@@ -126,7 +143,7 @@ npm run preview
 }
 ```
 
-13. 設定登入系統 secrets
+14. 設定登入系統 secrets
 
 本人登入與訪客登入需要 `SESSION_SECRET`。本人帳號還需要 `OWNER_USERNAME` 與 `OWNER_PASSWORD`。請用 Cloudflare secret 設定，不要寫進 repository：
 
@@ -160,7 +177,7 @@ npx wrangler secret put TASK_API_TOKEN
 TASK_API_TOKEN="replace-with-local-test-token"
 ```
 
-前台 `/tasks/admin/` 會優先使用本人登入後的 session cookie 呼叫受保護 API；`TASK_API_TOKEN` 仍保留給 curl、腳本或其他非瀏覽器流程作為備援。
+前台 `/tasks/admin/` 與 `/journal/admin/` 會優先使用本人登入後的 session cookie 呼叫受保護 API；`TASK_API_TOKEN` 仍保留給 curl、腳本或其他非瀏覽器流程作為備援。
 
 15. 測試受保護任務 API
 
@@ -211,18 +228,59 @@ curl -X POST http://localhost:8787/api/admin/tasks/<task-id>/complete \
   -d '{}'
 ```
 
+清空全部任務：
+
+```bash
+curl -X POST http://localhost:8787/api/admin/tasks/clear \
+  -H "Authorization: Bearer $TASK_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{}'
+```
+
+16. 測試受保護研究筆記 API
+
+新增研究筆記：
+
+```bash
+curl -X POST http://localhost:8787/api/admin/journal \
+  -H "Authorization: Bearer $TASK_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "測試研究筆記",
+    "summary": "確認 D1 可以儲存研究筆記。",
+    "category": "研究日誌",
+    "status": "draft",
+    "entry_date": "2026-07-28",
+    "tags": ["D1", "Journal"],
+    "content_html": "<p>這是一篇測試筆記。</p>"
+  }'
+```
+
+更新研究筆記：
+
+```bash
+curl -X PATCH http://localhost:8787/api/admin/journal/<journal-id> \
+  -H "Authorization: Bearer $TASK_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "status": "published"
+  }'
+```
+
 如果尚未設定 `SESSION_SECRET` 與 `TASK_API_TOKEN`，受保護 API 會回傳 `auth_unconfigured`。如果登入狀態、token 錯誤或缺少授權資訊，會回傳 `unauthorized`。
 
 ## 目前限制
 
 - `/tasks` 目前優先使用 D1，D1 不可用時回退到 `tasks.json`。
-- `weekly-reports.json` 目前仍是 `/weekly` 的正式資料來源。
-- `/dashboard` 目前仍使用 JSON，不會因受保護任務 API 而自動改用 D1。
-- 目前新增的寫入能力只限 `/api/admin/tasks`、`/api/admin/tasks/<task-id>` 與 `/api/admin/tasks/<task-id>/complete`，而且必須具備本人登入 session 或 `TASK_API_TOKEN`。
-- `/tasks/admin/` 是本人登入後使用的任務管理頁，目前可新增任務與標記完成。
-- 目前尚未建立刪除 API、完整後台編輯介面或 D1 版 Blog 日誌編輯器。
+- `/weekly` 目前會讀 D1 週報，D1 不可用時回退到 `weekly-reports.json`。
+- `/dashboard` 目前會讀 D1 任務、週報與研究筆記，D1 不可用時回退到 JSON。
+- `/journal` 是 D1 版研究筆記，只有已發布筆記會公開顯示。
+- 目前新增的寫入能力只限受保護的任務 API 與研究筆記 API，而且必須具備本人登入 session 或 `TASK_API_TOKEN`。
+- `/tasks/admin/` 是本人登入後使用的任務管理頁，目前可新增任務、標記完成與清空任務。
+- `/journal/admin/` 是本人登入後使用的研究筆記撰寫頁，目前可建立草稿、發布筆記，並可貼入小型圖片。
 - `db/seed.sql` 是人工/部署流程使用的資料匯入檔，不是公開寫入 API。
-- 下一階段才會評估是否將 `/dashboard`、`/weekly` 與 Blog 日誌新增流程切換到 D1。
+- Blog content collection 文章仍是檔案式內容，尚未建立 D1 版 Blog frontmatter 編輯器。
+- 圖片目前會以小型 data URL 方式存在研究筆記內容中；大量圖片或大圖建議下一階段改接 Cloudflare R2。
 
 ## 注意事項
 

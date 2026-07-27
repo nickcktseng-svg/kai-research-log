@@ -5,10 +5,55 @@ import Footer from '../components/Footer.astro';
 import FormattedDate from '../components/FormattedDate.astro';
 import Header from '../components/Header.astro';
 import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
-import tasks from '../data/tasks.json';
-import reports from '../data/weekly-reports.json';
+import jsonTasks from '../data/tasks.json';
+import jsonReports from '../data/weekly-reports.json';
+import { listJournalEntries } from '../lib/database/journal';
+import { listDatabaseTasks } from '../lib/database/tasks';
+import { listDatabaseWeeklyReports } from '../lib/database/weekly-reports';
+import type {
+	JournalEntry,
+	TaskPriority,
+	TaskStatus,
+	TaskType,
+	TaskWithTags,
+	WeeklyReportWithSections,
+} from '../types/database';
+import { env } from 'cloudflare:workers';
 
-type Task = (typeof tasks)[number];
+export const prerender = false;
+
+type JsonTask = {
+	id: string;
+	title: string;
+	description: string;
+	type: TaskType;
+	category: string;
+	tags: string[];
+	status: TaskStatus;
+	priority: TaskPriority;
+	date: string | null;
+	week: string | null;
+};
+
+type JsonWeeklyReport = (typeof jsonReports)[number];
+
+type TaskView = JsonTask;
+
+type WeeklyReportView = {
+	id: string;
+	week: string;
+	title: string;
+	dateRange: string;
+	summary: string;
+	completed: string[];
+	progress: string[];
+	problems: string[];
+	solutions: string[];
+	unfinished: string[];
+	next: string[];
+	categories: string[];
+	tags: string[];
+};
 
 const statusLabels: Record<string, string> = {
 	todo: '未開始',
@@ -28,7 +73,83 @@ const priorityOrder: Record<string, number> = {
 	low: 2,
 };
 
-const sortTasks = (taskList: Task[]) =>
+const normalizeJsonTask = (task: JsonTask): TaskView => task;
+
+const normalizeDatabaseTask = (task: TaskWithTags): TaskView => ({
+	id: task.id,
+	title: task.title,
+	description: task.description,
+	type: task.type,
+	category: task.category,
+	tags: task.tags,
+	status: task.status,
+	priority: task.priority,
+	date: task.task_date,
+	week: task.week,
+});
+
+const normalizeJsonReport = (report: JsonWeeklyReport): WeeklyReportView => report;
+
+const normalizeDatabaseReport = (
+	report: WeeklyReportWithSections,
+): WeeklyReportView => ({
+	id: report.id,
+	week: report.week,
+	title: report.title,
+	dateRange: report.date_range,
+	summary: report.summary,
+	completed: report.completed,
+	progress: report.progress,
+	problems: report.problems,
+	solutions: report.solutions,
+	unfinished: report.unfinished,
+	next: report.next,
+	categories: report.categories,
+	tags: report.tags,
+});
+
+const loadDashboardData = async (): Promise<{
+	journals: JournalEntry[];
+	reports: WeeklyReportView[];
+	tasks: TaskView[];
+}> => {
+	const db = env.DB as D1Database | undefined;
+	const staticTasks = jsonTasks as JsonTask[];
+	const staticReports = jsonReports.map(normalizeJsonReport);
+
+	if (!db) {
+		return {
+			journals: [],
+			reports: staticReports,
+			tasks: staticTasks.map(normalizeJsonTask),
+		};
+	}
+
+	try {
+		const [databaseTasks, databaseReports, journals] = await Promise.all([
+			listDatabaseTasks(db),
+			listDatabaseWeeklyReports(db),
+			listJournalEntries(db, { includeDrafts: false, limit: 3 }),
+		]);
+
+		return {
+			journals,
+			reports: databaseReports.map(normalizeDatabaseReport),
+			tasks: databaseTasks.map(normalizeDatabaseTask),
+		};
+	} catch (error) {
+		console.error('Failed to load D1 dashboard data. Falling back to JSON.', error);
+		return {
+			journals: [],
+			reports: staticReports,
+			tasks: staticTasks.map(normalizeJsonTask),
+		};
+	}
+};
+
+const { journals, reports, tasks } = await loadDashboardData();
+
+const sortTasks = (taskList: TaskView[]) =>
 	[...taskList].sort((a, b) => {
 		const priorityDiff =
 			(priorityOrder[a.priority] ?? 99) - (priorityOrder[b.priority] ?? 99);
@@ -36,7 +157,7 @@ const sortTasks = (taskList: Task[]) =>
 		return `${b.date}${b.week}`.localeCompare(`${a.date}${a.week}`);
 	});
 
-const getTaskDate = (task: Task) =>
+const getTaskDate = (task: TaskView) =>
 	task.type === 'weekly' ? task.week : task.date;
 
 const taskStats = [
@@ -58,6 +179,8 @@ const latestReport = [...reports].sort((a, b) =>
 	b.week.localeCompare(a.week),
 )[0];
 
+const latestJournalEntries = journals.slice(0, 3);
+
 const latestPosts = (await getCollection('blog', ({ data }) => !data.draft))
 	.sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf())
 	.slice(0, 3);
@@ -77,6 +200,11 @@ const quickLinks = [
 		title: '研究週報',
 		description: '回顧每週完成事項、問題與下一步。',
 		href: '/weekly',
+	},
+	{
+		title: '研究筆記',
+		description: '撰寫與查看可插入圖片的研究紀錄。',
+		href: '/journal',
 	},
 	{
 		title: '文章分類',
@@ -616,6 +744,43 @@ const quickLinks = [
 						})
 					}
 				</div>
+			</section>
+
+			<section class="dashboard-section" aria-labelledby="latest-journal">
+				<div class="section-heading">
+					<div>
+						<h2 id="latest-journal" class="section-title">最新研究筆記</h2>
+						<p class="section-desc">本人登入後撰寫、發布的近期研究紀錄。</p>
+					</div>
+					<a href="/journal" class="section-link">查看筆記</a>
+				</div>
+
+				{
+					latestJournalEntries.length > 0 ? (
+						<div class="post-grid">
+							{latestJournalEntries.map((entry) => (
+								<article class="post-card">
+									<div class="meta-row">
+										<span class="pill pill-dark">{entry.category}</span>
+										{entry.tags.map((tag) => (
+											<span class="pill pill-light">{tag}</span>
+										))}
+									</div>
+
+									<h3 class="post-title">
+										<a href={`/journal/${entry.slug}/`}>{entry.title}</a>
+									</h3>
+									<p class="post-description">
+										{entry.summary || '這篇筆記尚未填寫摘要。'}
+									</p>
+									<p class="post-date">{entry.entry_date}</p>
+								</article>
+							))}
+						</div>
+					) : (
+						<p class="empty-state">目前還沒有已發布的研究筆記。</p>
+					)
+				}
 			</section>
 
 			<section class="dashboard-section" aria-labelledby="quick-links">

@@ -3,8 +3,97 @@ import BaseHead from '../components/BaseHead.astro';
 import Footer from '../components/Footer.astro';
 import Header from '../components/Header.astro';
 import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
-import reports from '../data/weekly-reports.json';
+import jsonReports from '../data/weekly-reports.json';
+import { listJournalEntries } from '../lib/database/journal';
+import { listDatabaseTasks } from '../lib/database/tasks';
+import { listDatabaseWeeklyReports } from '../lib/database/weekly-reports';
+import { buildWeeklyOutline } from '../lib/weekly/outline';
+import type { WeeklyOutline } from '../lib/weekly/outline';
+import type {
+	JournalEntry,
+	TaskWithTags,
+	WeeklyReportWithSections,
+} from '../types/database';
+import { env } from 'cloudflare:workers';
 
+export const prerender = false;
+
+type JsonWeeklyReport = (typeof jsonReports)[number];
+
+type WeeklyReportView = {
+	id: string;
+	week: string;
+	title: string;
+	dateRange: string;
+	summary: string;
+	completed: string[];
+	progress: string[];
+	problems: string[];
+	solutions: string[];
+	unfinished: string[];
+	next: string[];
+	categories: string[];
+	tags: string[];
+};
+
+const normalizeJsonReport = (report: JsonWeeklyReport): WeeklyReportView => report;
+
+const normalizeDatabaseReport = (
+	report: WeeklyReportWithSections,
+): WeeklyReportView => ({
+	id: report.id,
+	week: report.week,
+	title: report.title,
+	dateRange: report.date_range,
+	summary: report.summary,
+	completed: report.completed,
+	progress: report.progress,
+	problems: report.problems,
+	solutions: report.solutions,
+	unfinished: report.unfinished,
+	next: report.next,
+	categories: report.categories,
+	tags: report.tags,
+});
+
+const loadWeeklyData = async (): Promise<{
+	journals: JournalEntry[];
+	reports: WeeklyReportView[];
+	tasks: TaskWithTags[];
+}> => {
+	const db = env.DB as D1Database | undefined;
+	if (!db) {
+		return {
+			journals: [],
+			reports: jsonReports.map(normalizeJsonReport),
+			tasks: [],
+		};
+	}
+
+	try {
+		const [databaseTasks, databaseReports, journals] = await Promise.all([
+			listDatabaseTasks(db),
+			listDatabaseWeeklyReports(db),
+			listJournalEntries(db, { includeDrafts: false, limit: 100 }),
+		]);
+
+		return {
+			journals,
+			reports: databaseReports.map(normalizeDatabaseReport),
+			tasks: databaseTasks,
+		};
+	} catch (error) {
+		console.error('Failed to load D1 weekly data. Falling back to JSON reports.', error);
+		return {
+			journals: [],
+			reports: jsonReports.map(normalizeJsonReport),
+			tasks: [],
+		};
+	}
+};
+
+const { journals, reports, tasks } = await loadWeeklyData();
+const outline: WeeklyOutline = buildWeeklyOutline({ journals, tasks });
 const sortedReports = [...reports].sort((a, b) => b.week.localeCompare(a.week));
 
 const reportSections = [
@@ -41,8 +130,48 @@ const reportSections = [
 			.page-desc {
 				color: #666;
 				font-size: 1.1rem;
-				margin-bottom: 40px;
+				margin-bottom: 24px;
 				max-width: 720px;
+			}
+
+			.page-actions {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 12px;
+				margin-bottom: 40px;
+			}
+
+			.action-link {
+				display: inline-flex;
+				align-items: center;
+				padding: 10px 16px;
+				border: 1px solid #e5e7eb;
+				border-radius: 999px;
+				background: #fff;
+				color: #333;
+				font-size: 0.95rem;
+				font-weight: 700;
+				text-decoration: none;
+				transition:
+					background-color 0.2s ease,
+					border-color 0.2s ease,
+					transform 0.2s ease;
+			}
+
+			.action-link:hover {
+				background: #f3f4f6;
+				border-color: #d1d5db;
+				transform: translateY(-2px);
+			}
+
+			.outline-section {
+				margin-bottom: 42px;
+			}
+
+			.section-title {
+				margin: 0 0 16px;
+				color: #111;
+				font-size: 1.7rem;
 			}
 
 			.report-list {
@@ -143,6 +272,11 @@ const reportSections = [
 				line-height: 1;
 			}
 
+			.pill-dark {
+				background: #111;
+				color: #fff;
+			}
+
 			@media (max-width: 720px) {
 				.page-title {
 					font-size: 2.5rem;
@@ -172,6 +306,53 @@ const reportSections = [
 				每週整理完成事項、研究進度、遇到的問題與下一步目標。
 			</p>
 
+			<div class="page-actions">
+				<a href="/tasks" class="action-link">查看任務</a>
+				<a href="/journal" class="action-link">查看研究筆記</a>
+				<a href="/dashboard" class="action-link">回到儀表板</a>
+			</div>
+
+			<section class="outline-section" aria-labelledby="autoOutlineTitle">
+				<h2 class="section-title" id="autoOutlineTitle">本週自動大綱</h2>
+				<article class="report-card">
+					<header class="report-header">
+						<div>
+							<h3 class="report-title">{outline.title}</h3>
+							<p class="report-date">{outline.dateRange}</p>
+						</div>
+						<span class="week-pill">{outline.week}</span>
+					</header>
+
+					<p class="summary">{outline.summary}</p>
+
+					<div class="report-sections">
+						{reportSections.map((section) => (
+							<section>
+								<h4 class="report-section-title">
+									{section.title}
+								</h4>
+								<ul class="report-section-list">
+									{outline[section.key].map((item) => (
+										<li>{item}</li>
+									))}
+								</ul>
+							</section>
+						))}
+					</div>
+
+					<div class="meta-row">
+						<span class="pill pill-dark">自動整理</span>
+						{outline.categories.map((category) => (
+							<span class="pill">{category}</span>
+						))}
+						{outline.tags.map((tag) => (
+							<span class="pill">{tag}</span>
+						))}
+					</div>
+				</article>
+			</section>
+
+			<h2 class="section-title">已儲存週報</h2>
 			<ul class="report-list">
 				{
 					sortedReports.map((report) => (

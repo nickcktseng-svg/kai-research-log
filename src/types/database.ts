@@ -80,3 +80,46 @@ export interface WeeklyReportWithSections extends DatabaseWeeklyReport {
 	categories: string[];
 	tags: string[];
 }
+
+export type JournalStatus = 'draft' | 'published';
+
+export interface DatabaseJournalEntry {
+	id: string;
+	slug: string;
+	title: string;
+	summary: string;
+	category: string;
+	tags_json: string;
+	content_html: string;
+	status: JournalStatus;
+	entry_date: string;
+	created_at: string;
+	updated_at: string;
+}
+
+export interface JournalEntry
+	extends Omit<DatabaseJournalEntry, 'tags_json'> {
+	tags: string[];
+}
+
+export interface CreateJournalEntryInput {
+	title: string;
+	slug: string | null;
+	summary: string;
+	category: string;
+	tags: string[];
+	content_html: string;
+	status: JournalStatus;
+	entry_date: string;
+}
+
+export interface UpdateJournalEntryInput {
+	title?: string;
+	slug?: string | null;
+	summary?: string;
+	category?: string;
+	tags?: string[];
+	content_html?: string;
+	status?: JournalStatus;
+	entry_date?: string;
+}

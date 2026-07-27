@@ -4,61 +4,12 @@
 
 PRAGMA foreign_keys = ON;
 
-DELETE FROM task_tags WHERE task_id IN ('task-20260716-01', 'task-20260716-02', 'task-20260716-03', 'task-20260715-01', 'task-2026w29-01', 'task-2026w29-02');
+-- No task_tags rows to rebuild.
 DELETE FROM weekly_report_sections WHERE report_id IN ('weekly-2026-w29');
 DELETE FROM weekly_report_tags WHERE report_id IN ('weekly-2026-w29');
 DELETE FROM weekly_report_categories WHERE report_id IN ('weekly-2026-w29');
 
-INSERT INTO tasks (
-  id,
-  title,
-  description,
-  type,
-  category,
-  status,
-  priority,
-  task_date,
-  week
-) VALUES
-('task-20260716-01', '確認 Blog 分類與標籤系統', '檢查 /blog、/categories、/tags 是否能正常顯示與篩選。', 'daily', '網站開發', 'done', 'medium', '2026-07-16', '2026-W29'),
-('task-20260716-02', '整理 Slab Builder 開發紀錄', '將 Slab Builder 的功能、問題與除錯過程整理成後續文章素材。', 'daily', '工具開發', 'doing', 'high', '2026-07-16', '2026-W29'),
-('task-20260716-03', '檢查 VASP 筆記分類', '確認計算化學相關文章的分類與標籤是否方便後續查找。', 'daily', '計算化學', 'todo', 'medium', '2026-07-16', '2026-W29'),
-('task-20260715-01', '整理 HPC 環境設定重點', '將常用 Linux 與 HPC 操作筆記整理成可重複查閱的清單。', 'daily', '計算環境', 'done', 'low', '2026-07-15', '2026-W29'),
-('task-2026w29-01', '建立研究管理系統第一版', '完成每日任務、每週任務與週報頁面。', 'weekly', '網站開發', 'todo', 'high', '2026-07-16', '2026-W29'),
-('task-2026w29-02', '建立研究素材整理節奏', '每週回顧文章草稿、工具開發紀錄與文獻整理狀態。', 'weekly', '研究整理', 'doing', 'medium', '2026-07-16', '2026-W29')
-ON CONFLICT(id) DO UPDATE SET
-  title = excluded.title,
-  description = excluded.description,
-  type = excluded.type,
-  category = excluded.category,
-  status = excluded.status,
-  priority = excluded.priority,
-  task_date = excluded.task_date,
-  week = excluded.week,
-  updated_at = CURRENT_TIMESTAMP;
-
-INSERT INTO task_tags (
-  task_id,
-  tag
-) VALUES
-('task-20260716-01', 'Astro'),
-('task-20260716-01', 'Blog'),
-('task-20260716-01', '分類系統'),
-('task-20260716-02', 'Slab Builder'),
-('task-20260716-02', 'ASE'),
-('task-20260716-02', 'VASP'),
-('task-20260716-03', 'VASP'),
-('task-20260716-03', '筆記整理'),
-('task-20260716-03', 'Blog'),
-('task-20260715-01', 'HPC'),
-('task-20260715-01', 'Linux'),
-('task-20260715-01', '研究流程'),
-('task-2026w29-01', 'Astro'),
-('task-2026w29-01', '任務管理'),
-('task-2026w29-01', '週報'),
-('task-2026w29-02', '研究整理'),
-('task-2026w29-02', '週報'),
-('task-2026w29-02', '工作流程');
+-- No static tasks to seed.
 
 INSERT INTO weekly_reports (
   id,

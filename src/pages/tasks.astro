@@ -15,7 +15,18 @@ import { env } from 'cloudflare:workers';
 
 export const prerender = false;
 
-type JsonTask = (typeof jsonTasks)[number];
+type JsonTask = {
+	id: string;
+	title: string;
+	description: string;
+	type: TaskType;
+	category: string;
+	tags: string[];
+	status: TaskStatus;
+	priority: TaskPriority;
+	date: string | null;
+	week: string | null;
+};
 
 type TaskView = {
 	id: string;
@@ -81,9 +92,10 @@ const normalizeDatabaseTask = (task: TaskWithTags): TaskView => ({
 
 const loadTasks = async (): Promise<TaskView[]> => {
 	const db = env.DB as D1Database | undefined;
+	const staticTasks = jsonTasks as JsonTask[];
 
 	if (!db) {
-		return jsonTasks.map(normalizeJsonTask);
+		return staticTasks.map(normalizeJsonTask);
 	}
 
 	try {
@@ -91,7 +103,7 @@ const loadTasks = async (): Promise<TaskView[]> => {
 		return databaseTasks.map(normalizeDatabaseTask);
 	} catch (error) {
 		console.error('Failed to load D1 tasks. Falling back to JSON tasks.', error);
-		return jsonTasks.map(normalizeJsonTask);
+		return staticTasks.map(normalizeJsonTask);
 	}
 };
 

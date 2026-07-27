@@ -181,3 +181,10 @@ export const completeDatabaseTask = async (
 	db: D1Database,
 	id: string,
 ): Promise<TaskWithTags | null> => updateDatabaseTask(db, id, { status: 'done' });
+
+export const deleteAllDatabaseTasks = async (db: D1Database): Promise<void> => {
+	await db.batch([
+		db.prepare('DELETE FROM task_tags'),
+		db.prepare('DELETE FROM tasks'),
+	]);
+};

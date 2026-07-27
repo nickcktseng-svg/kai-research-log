@@ -1,0 +1,839 @@
+---
+import BaseHead from '../../components/BaseHead.astro';
+import Footer from '../../components/Footer.astro';
+import Header from '../../components/Header.astro';
+import { SITE_DESCRIPTION, SITE_TITLE } from '../../consts';
+import { readAuthSession } from '../../lib/auth/session';
+import { env } from 'cloudflare:workers';
+
+export const prerender = false;
+
+const session = await readAuthSession(Astro.request, env.SESSION_SECRET);
+if (session?.role !== 'owner') {
+	return Astro.redirect('/login?next=/journal/admin/');
+}
+---
+
+<!doctype html>
+<html lang="zh-TW">
+	<head>
+		<BaseHead title={`撰寫研究筆記 | ${SITE_TITLE}`} description={SITE_DESCRIPTION} />
+
+		<style>
+			main {
+				width: 100%;
+				max-width: 1120px;
+				margin: 0 auto;
+				padding: 40px 20px;
+			}
+
+			.page-kicker {
+				margin: 0 0 10px;
+				color: #777;
+				font-size: 0.95rem;
+				font-weight: 700;
+			}
+
+			.page-title {
+				margin: 0 0 10px;
+				color: #111;
+				font-size: 3.2rem;
+				font-weight: 800;
+				letter-spacing: 0;
+			}
+
+			.page-desc {
+				max-width: 760px;
+				margin: 0 0 26px;
+				color: #666;
+				font-size: 1.05rem;
+				line-height: 1.8;
+			}
+
+			.page-actions,
+			.button-row,
+			.toolbar {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 10px;
+			}
+
+			.page-actions {
+				margin-bottom: 30px;
+			}
+
+			.action-link,
+			.button {
+				display: inline-flex;
+				align-items: center;
+				justify-content: center;
+				min-height: 42px;
+				padding: 10px 16px;
+				border: 1px solid #e5e7eb;
+				border-radius: 999px;
+				background: #fff;
+				color: #333;
+				font: inherit;
+				font-size: 0.95rem;
+				font-weight: 700;
+				text-decoration: none;
+				cursor: pointer;
+				transition:
+					background-color 0.2s ease,
+					border-color 0.2s ease,
+					color 0.2s ease,
+					transform 0.2s ease;
+			}
+
+			.action-link:hover,
+			.button:hover {
+				background: #f3f4f6;
+				border-color: #d1d5db;
+				transform: translateY(-2px);
+			}
+
+			.button-primary {
+				background: #111;
+				border-color: #111;
+				color: #fff;
+			}
+
+			.button-primary:hover {
+				background: #333;
+				border-color: #333;
+			}
+
+			.button:disabled {
+				cursor: not-allowed;
+				opacity: 0.55;
+				transform: none;
+			}
+
+			.admin-grid {
+				display: grid;
+				grid-template-columns: minmax(0, 1.3fr) minmax(280px, 0.7fr);
+				gap: 24px;
+				align-items: start;
+			}
+
+			.panel {
+				border: 1px solid #eee;
+				border-radius: 8px;
+				background: #fff;
+				box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+			}
+
+			.panel-header,
+			.panel-body {
+				padding: 22px;
+			}
+
+			.panel-header {
+				border-bottom: 1px solid #eee;
+			}
+
+			.panel-title {
+				margin: 0;
+				color: #111;
+				font-size: 1.2rem;
+			}
+
+			.panel-desc,
+			.status-text {
+				margin: 8px 0 0;
+				color: #666;
+				font-size: 0.94rem;
+				line-height: 1.7;
+			}
+
+			.status-message {
+				margin: 0 0 18px;
+				padding: 12px 14px;
+				border: 1px solid #e5e7eb;
+				border-radius: 8px;
+				background: #f9fafb;
+				color: #444;
+				font-size: 0.92rem;
+				line-height: 1.6;
+			}
+
+			.status-message.success {
+				border-color: #c7d7c7;
+				background: #f5faf5;
+				color: #255525;
+			}
+
+			.status-message.error {
+				border-color: #e5c7c7;
+				background: #fff7f7;
+				color: #7a2626;
+			}
+
+			.form-grid {
+				display: grid;
+				gap: 16px;
+			}
+
+			.form-row {
+				display: grid;
+				grid-template-columns: 1fr 1fr;
+				gap: 14px;
+			}
+
+			.field {
+				display: grid;
+				gap: 8px;
+			}
+
+			label {
+				color: #333;
+				font-size: 0.9rem;
+				font-weight: 700;
+			}
+
+			input,
+			select,
+			textarea {
+				width: 100%;
+				border: 1px solid #e5e7eb;
+				border-radius: 8px;
+				background: #fff;
+				color: #111;
+				font: inherit;
+				font-size: 0.95rem;
+				line-height: 1.5;
+			}
+
+			input,
+			select {
+				min-height: 42px;
+				padding: 9px 12px;
+			}
+
+			textarea {
+				min-height: 90px;
+				padding: 11px 12px;
+				resize: vertical;
+			}
+
+			input:focus,
+			select:focus,
+			textarea:focus,
+			.editor:focus {
+				outline: 2px solid #111;
+				outline-offset: 2px;
+				border-color: #111;
+			}
+
+			.toolbar {
+				padding: 12px;
+				border: 1px solid #e5e7eb;
+				border-bottom: 0;
+				border-radius: 8px 8px 0 0;
+				background: #fafafa;
+			}
+
+			.toolbar .button {
+				min-height: 34px;
+				padding: 7px 11px;
+				font-size: 0.86rem;
+			}
+
+			.editor {
+				min-height: 430px;
+				padding: 18px;
+				border: 1px solid #e5e7eb;
+				border-radius: 0 0 8px 8px;
+				color: #222;
+				font-size: 1rem;
+				line-height: 1.8;
+			}
+
+			.editor:empty::before {
+				content: attr(data-placeholder);
+				color: #999;
+			}
+
+			.editor :global(img) {
+				max-width: 100%;
+				height: auto;
+				border: 1px solid #eee;
+				border-radius: 8px;
+			}
+
+			.editor :global(figure) {
+				margin: 16px 0;
+			}
+
+			.editor :global(figcaption) {
+				margin-top: 8px;
+				color: #777;
+				font-size: 0.9rem;
+				text-align: center;
+			}
+
+			.entry-list {
+				display: grid;
+				gap: 12px;
+				margin: 0;
+				padding: 0;
+				list-style: none;
+			}
+
+			.entry-button {
+				width: 100%;
+				border: 1px solid #eee;
+				border-radius: 8px;
+				background: #fff;
+				color: #111;
+				padding: 14px;
+				text-align: left;
+				cursor: pointer;
+			}
+
+			.entry-button:hover,
+			.entry-button.active {
+				border-color: #111;
+				background: #fafafa;
+			}
+
+			.entry-button strong {
+				display: block;
+				margin-bottom: 6px;
+				line-height: 1.45;
+			}
+
+			.entry-button span {
+				color: #666;
+				font-size: 0.86rem;
+			}
+
+			.pill-list {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 8px;
+			}
+
+			.pill {
+				display: inline-flex;
+				align-items: center;
+				border-radius: 999px;
+				padding: 7px 10px;
+				font-size: 0.78rem;
+				font-weight: 700;
+				line-height: 1;
+			}
+
+			.pill-dark {
+				background: #111;
+				color: #fff;
+			}
+
+			.pill-light {
+				background: #f3f4f6;
+				color: #444;
+			}
+
+			[hidden] {
+				display: none !important;
+			}
+
+			@media (max-width: 900px) {
+				.admin-grid {
+					grid-template-columns: 1fr;
+				}
+			}
+
+			@media (max-width: 620px) {
+				main {
+					padding: 32px 18px;
+				}
+
+				.page-title {
+					font-size: 2.35rem;
+				}
+
+				.form-row {
+					grid-template-columns: 1fr;
+				}
+			}
+		</style>
+	</head>
+
+	<body>
+		<Header />
+
+		<main>
+			<p class="page-kicker">Journal Admin</p>
+			<h1 class="page-title">撰寫研究筆記</h1>
+			<p class="page-desc">
+				本人登入後可以撰寫草稿、發布筆記，並把圖片直接貼在想放的位置。
+			</p>
+
+			<div class="page-actions">
+				<a href="/journal" class="action-link">返回研究筆記</a>
+				<a href="/dashboard" class="action-link">回到儀表板</a>
+				<button type="button" class="button" id="newEntryButton">新增空白筆記</button>
+				<button type="button" class="button" id="refreshEntriesButton">重新整理</button>
+			</div>
+
+			<p class="status-message" id="statusMessage" aria-live="polite">
+				載入研究筆記中。
+			</p>
+
+			<div class="admin-grid">
+				<section class="panel" aria-labelledby="editorTitle">
+					<div class="panel-header">
+						<h2 class="panel-title" id="editorTitle">筆記內容</h2>
+						<p class="panel-desc">
+							可先儲存草稿；選擇發布後會出現在公開研究筆記頁。
+						</p>
+					</div>
+					<div class="panel-body">
+						<form id="journalForm" class="form-grid">
+							<div class="form-row">
+								<div class="field">
+									<label for="title">標題</label>
+									<input id="title" name="title" type="text" maxlength="180" required />
+								</div>
+								<div class="field">
+									<label for="slug">網址代稱</label>
+									<input
+										id="slug"
+										name="slug"
+										type="text"
+										maxlength="90"
+										placeholder="留空會自動產生"
+									/>
+								</div>
+							</div>
+
+							<div class="field">
+								<label for="summary">摘要</label>
+								<textarea id="summary" name="summary" maxlength="1200"></textarea>
+							</div>
+
+							<div class="form-row">
+								<div class="field">
+									<label for="category">分類</label>
+									<input
+										id="category"
+										name="category"
+										type="text"
+										maxlength="80"
+										value="研究日誌"
+									/>
+								</div>
+								<div class="field">
+									<label for="tags">標籤</label>
+									<input id="tags" name="tags" type="text" placeholder="VASP, DFT, 文獻" />
+								</div>
+							</div>
+
+							<div class="form-row">
+								<div class="field">
+									<label for="entryDate">日期</label>
+									<input id="entryDate" name="entryDate" type="date" />
+								</div>
+								<div class="field">
+									<label for="status">狀態</label>
+									<select id="status" name="status">
+										<option value="draft">草稿</option>
+										<option value="published">發布</option>
+									</select>
+								</div>
+							</div>
+
+							<div class="field">
+								<label for="editor">內文</label>
+								<div class="toolbar" aria-label="文字工具列">
+									<button type="button" class="button" data-command="bold">B</button>
+									<button type="button" class="button" data-command="italic">I</button>
+									<button type="button" class="button" data-block="h2">H2</button>
+									<button type="button" class="button" data-block="h3">H3</button>
+									<button type="button" class="button" data-command="insertUnorderedList">
+										清單
+									</button>
+									<button type="button" class="button" data-block="blockquote">
+										引用
+									</button>
+									<button type="button" class="button" id="insertImageButton">
+										插入圖片
+									</button>
+								</div>
+								<div
+									id="editor"
+									class="editor"
+									contenteditable="true"
+									data-placeholder="在這裡開始撰寫。可以直接貼上圖片，圖片會插入游標所在位置。"
+								></div>
+								<input id="imageInput" type="file" accept="image/*" hidden />
+							</div>
+
+							<div class="button-row">
+								<button type="submit" class="button button-primary" id="saveButton">
+									儲存筆記
+								</button>
+								<a href="/journal" class="action-link">查看公開頁</a>
+							</div>
+						</form>
+					</div>
+				</section>
+
+				<section class="panel" aria-labelledby="entryListTitle">
+					<div class="panel-header">
+						<h2 class="panel-title" id="entryListTitle">已建立筆記</h2>
+						<p class="panel-desc">
+							點選一篇筆記即可載入編輯；草稿不會顯示在公開頁。
+						</p>
+					</div>
+					<div class="panel-body">
+						<ul class="entry-list" id="entryList"></ul>
+					</div>
+				</section>
+			</div>
+		</main>
+
+		<Footer />
+
+		<script>
+			const refs = {
+				form: document.querySelector('#journalForm'),
+				title: document.querySelector('#title'),
+				slug: document.querySelector('#slug'),
+				summary: document.querySelector('#summary'),
+				category: document.querySelector('#category'),
+				tags: document.querySelector('#tags'),
+				entryDate: document.querySelector('#entryDate'),
+				status: document.querySelector('#status'),
+				editor: document.querySelector('#editor'),
+				imageInput: document.querySelector('#imageInput'),
+				insertImageButton: document.querySelector('#insertImageButton'),
+				newEntryButton: document.querySelector('#newEntryButton'),
+				refreshEntriesButton: document.querySelector('#refreshEntriesButton'),
+				saveButton: document.querySelector('#saveButton'),
+				statusMessage: document.querySelector('#statusMessage'),
+				entryList: document.querySelector('#entryList'),
+				toolbarButtons: document.querySelectorAll('[data-command], [data-block]'),
+			};
+
+			if (Object.values(refs).every(Boolean)) {
+				const {
+					form,
+					title,
+					slug,
+					summary,
+					category,
+					tags,
+					entryDate,
+					status,
+					editor,
+					imageInput,
+					insertImageButton,
+					newEntryButton,
+					refreshEntriesButton,
+					saveButton,
+					statusMessage,
+					entryList,
+					toolbarButtons,
+				} = refs;
+
+				let entries = [];
+				let activeEntryId = null;
+
+				const formatDateInput = (date) => {
+					const localDate = new Date(
+						date.getTime() - date.getTimezoneOffset() * 60_000,
+					);
+					return localDate.toISOString().slice(0, 10);
+				};
+
+				const setMessage = (message, tone = 'neutral') => {
+					statusMessage.textContent = message;
+					statusMessage.classList.toggle('success', tone === 'success');
+					statusMessage.classList.toggle('error', tone === 'error');
+				};
+
+				const parseTags = (value) =>
+					String(value ?? '')
+						.split(',')
+						.map((tag) => tag.trim())
+						.filter((tag, index, list) => tag && list.indexOf(tag) === index);
+
+				const createSlug = (value) =>
+					String(value ?? '')
+						.trim()
+						.toLowerCase()
+						.replace(/[^\p{Letter}\p{Number}]+/gu, '-')
+						.replace(/^-+|-+$/g, '')
+						.slice(0, 90);
+
+				const readError = async (response) => {
+					try {
+						const body = await response.json();
+						if (body.error === 'unauthorized') return '請先以本人帳號登入。';
+						if (body.error === 'auth_unconfigured') {
+							return '尚未設定登入用的 Cloudflare secrets。';
+						}
+						if (body.error === 'database_unavailable') return 'D1 資料庫目前不可用。';
+						return body.message ?? body.error ?? `請求失敗 (${response.status})。`;
+					} catch {
+						return `請求失敗 (${response.status})。`;
+					}
+				};
+
+				const apiJson = async (endpoint, init = {}) => {
+					const response = await fetch(endpoint, {
+						...init,
+						credentials: 'same-origin',
+						headers: {
+							'content-type': 'application/json',
+							...(init.headers ?? {}),
+						},
+					});
+
+					if (!response.ok) {
+						throw new Error(await readError(response));
+					}
+
+					return response.json();
+				};
+
+				const resetForm = () => {
+					activeEntryId = null;
+					form.reset();
+					editor.innerHTML = '';
+					entryDate.value = formatDateInput(new Date());
+					category.value = '研究日誌';
+					status.value = 'draft';
+					document
+						.querySelectorAll('[data-entry-id]')
+						.forEach((button) => button.classList.remove('active'));
+					setMessage('已建立新的空白筆記。');
+				};
+
+				const loadEntryIntoForm = (entry) => {
+					activeEntryId = entry.id;
+					title.value = entry.title;
+					slug.value = entry.slug;
+					summary.value = entry.summary;
+					category.value = entry.category;
+					tags.value = entry.tags.join(', ');
+					entryDate.value = entry.entry_date;
+					status.value = entry.status;
+					editor.innerHTML = entry.content_html || '';
+
+					document.querySelectorAll('[data-entry-id]').forEach((button) => {
+						button.classList.toggle('active', button.dataset.entryId === entry.id);
+					});
+					setMessage(`正在編輯：${entry.title}`);
+				};
+
+				const renderEntries = () => {
+					entryList.replaceChildren();
+
+					if (entries.length === 0) {
+						const item = document.createElement('li');
+						const empty = document.createElement('p');
+						empty.className = 'status-text';
+						empty.textContent = '目前還沒有研究筆記。';
+						item.append(empty);
+						entryList.append(item);
+						return;
+					}
+
+					for (const entry of entries) {
+						const item = document.createElement('li');
+						const button = document.createElement('button');
+						button.type = 'button';
+						button.className = 'entry-button';
+						button.dataset.entryId = entry.id;
+						button.classList.toggle('active', entry.id === activeEntryId);
+
+						const titleNode = document.createElement('strong');
+						titleNode.textContent = entry.title;
+						const metaNode = document.createElement('span');
+						metaNode.textContent = `${entry.entry_date} · ${
+							entry.status === 'published' ? '已發布' : '草稿'
+						}`;
+
+						button.append(titleNode, metaNode);
+						item.append(button);
+						entryList.append(item);
+					}
+				};
+
+				const loadEntries = async () => {
+					setMessage('載入研究筆記中。');
+					const data = await apiJson('/api/admin/journal');
+					if (!data.ok) throw new Error(data.message ?? data.error);
+					entries = data.entries;
+					renderEntries();
+					setMessage('研究筆記已更新。', 'success');
+				};
+
+				const saveEntry = async () => {
+					const titleValue = title.value.trim();
+					const payload = {
+						title: titleValue,
+						slug: slug.value.trim() || createSlug(titleValue),
+						summary: summary.value,
+						category: category.value,
+						tags: parseTags(tags.value),
+						entry_date: entryDate.value,
+						status: status.value,
+						content_html: editor.innerHTML,
+					};
+
+					saveButton.disabled = true;
+					saveButton.textContent = '儲存中';
+
+					try {
+						const endpoint = activeEntryId
+							? `/api/admin/journal/${encodeURIComponent(activeEntryId)}`
+							: '/api/admin/journal';
+						const method = activeEntryId ? 'PATCH' : 'POST';
+						const data = await apiJson(endpoint, {
+							method,
+							body: JSON.stringify(payload),
+						});
+
+						if (!data.ok) throw new Error(data.message ?? data.error);
+
+						const savedEntry = data.entry;
+						const existingIndex = entries.findIndex((entry) => entry.id === savedEntry.id);
+						if (existingIndex >= 0) {
+							entries[existingIndex] = savedEntry;
+						} else {
+							entries = [savedEntry, ...entries];
+						}
+
+						loadEntryIntoForm(savedEntry);
+						renderEntries();
+						setMessage('研究筆記已儲存。', 'success');
+					} finally {
+						saveButton.disabled = false;
+						saveButton.textContent = '儲存筆記';
+					}
+				};
+
+				const insertHtmlAtCursor = (html) => {
+					editor.focus();
+					document.execCommand('insertHTML', false, html);
+				};
+
+				const insertImageFile = async (file) => {
+					if (!file.type.startsWith('image/')) return;
+					if (file.size > 650_000) {
+						setMessage('圖片檔案太大，請先壓縮到約 650 KB 以下。', 'error');
+						return;
+					}
+
+					const dataUrl = await new Promise((resolve, reject) => {
+						const reader = new FileReader();
+						reader.addEventListener('load', () => resolve(String(reader.result ?? '')));
+						reader.addEventListener('error', () => reject(new Error('圖片讀取失敗。')));
+						reader.readAsDataURL(file);
+					});
+
+					insertHtmlAtCursor(
+						`<figure><img src="${dataUrl}" alt=""><figcaption>圖片說明</figcaption></figure>`,
+					);
+					setMessage('圖片已插入。', 'success');
+				};
+
+				toolbarButtons.forEach((button) => {
+					button.addEventListener('click', () => {
+						const command = button.dataset.command;
+						const block = button.dataset.block;
+						editor.focus();
+
+						if (command) {
+							document.execCommand(command, false);
+							return;
+						}
+
+						if (block) {
+							document.execCommand('formatBlock', false, block);
+						}
+					});
+				});
+
+				insertImageButton.addEventListener('click', () => {
+					imageInput.click();
+				});
+
+				imageInput.addEventListener('change', () => {
+					const file = imageInput.files?.[0];
+					if (!file) return;
+					insertImageFile(file).catch((error) => {
+						setMessage(
+							error instanceof Error ? error.message : '圖片插入失敗。',
+							'error',
+						);
+					});
+					imageInput.value = '';
+				});
+
+				editor.addEventListener('paste', (event) => {
+					const items = Array.from(event.clipboardData?.items ?? []);
+					const imageItem = items.find((item) => item.type.startsWith('image/'));
+					if (!imageItem) return;
+
+					const file = imageItem.getAsFile();
+					if (!file) return;
+					event.preventDefault();
+
+					insertImageFile(file).catch((error) => {
+						setMessage(
+							error instanceof Error ? error.message : '圖片貼上失敗。',
+							'error',
+						);
+					});
+				});
+
+				title.addEventListener('blur', () => {
+					if (!slug.value.trim()) slug.value = createSlug(title.value);
+				});
+
+				form.addEventListener('submit', (event) => {
+					event.preventDefault();
+					saveEntry().catch((error) => {
+						setMessage(
+							error instanceof Error ? error.message : '研究筆記儲存失敗。',
+							'error',
+						);
+					});
+				});
+
+				entryList.addEventListener('click', (event) => {
+					const target = event.target;
+					if (!(target instanceof Element)) return;
+					const button = target.closest('[data-entry-id]');
+					if (!(button instanceof HTMLElement)) return;
+					const entry = entries.find((item) => item.id === button.dataset.entryId);
+					if (entry) loadEntryIntoForm(entry);
+				});
+
+				newEntryButton.addEventListener('click', resetForm);
+
+				refreshEntriesButton.addEventListener('click', () => {
+					loadEntries().catch((error) => {
+						setMessage(
+							error instanceof Error ? error.message : '載入研究筆記失敗。',
+							'error',
+						);
+					});
+				});
+
+				entryDate.value = formatDateInput(new Date());
+				loadEntries().catch((error) => {
+					setMessage(
+						error instanceof Error ? error.message : '載入研究筆記失敗。',
+						'error',
+					);
+				});
+			}
+		</script>
+	</body>
+</html>

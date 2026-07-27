@@ -1,20 +1,149 @@
-## 關於我
+---
+import BaseHead from '../components/BaseHead.astro';
+import Footer from '../components/Footer.astro';
+import Header from '../components/Header.astro';
+import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
+---
 
-我是曾智凱，目前就讀化學相關科系，並於實驗室參與計算化學與模型建構研究。
+<!doctype html>
+<html lang="zh-TW">
+	<head>
+		<BaseHead title={`關於我 | ${SITE_TITLE}`} description={SITE_DESCRIPTION} />
 
-## 目前研究方向
+		<style>
+			main {
+				width: 100%;
+				max-width: 900px;
+				margin: 0 auto;
+				padding: 40px 20px;
+			}
 
-- 密度泛函理論 DFT
-- VASP 計算
-- 表面與晶面模型建構
-- Slab 結構產生
-- HPC 與 Linux 計算環境
-- AI 輔助研究工作流程
+			.page-title {
+				margin: 0 0 10px;
+				color: #111;
+				font-size: 3.5rem;
+				font-weight: 800;
+				letter-spacing: 0;
+			}
 
-## 這個網站的目的
+			.page-desc {
+				max-width: 720px;
+				margin: 0 0 38px;
+				color: #666;
+				font-size: 1.1rem;
+				line-height: 1.8;
+			}
 
-這個網站用來記錄研究進度、軟體開發過程、文獻整理以及實驗室工作中遇到的問題與解決方式。
+			.content-grid {
+				display: grid;
+				gap: 22px;
+			}
 
-## 使用工具
+			.section {
+				padding: 26px;
+				border: 1px solid #eee;
+				border-radius: 8px;
+				background: #fff;
+				box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+			}
 
-Python、ASE、VASP、Linux、GitHub、Cloudflare、Astro、OpenAlex。
+			.section h2 {
+				margin: 0 0 12px;
+				color: #111;
+				font-size: 1.35rem;
+			}
+
+			.section p,
+			.section li {
+				color: #555;
+				line-height: 1.8;
+			}
+
+			.section p {
+				margin: 0;
+			}
+
+			.section ul {
+				margin: 0;
+				padding-left: 1.2rem;
+			}
+
+			.pill-row {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 8px;
+				margin-top: 16px;
+			}
+
+			.pill {
+				display: inline-flex;
+				align-items: center;
+				border-radius: 999px;
+				background: #f3f4f6;
+				color: #444;
+				padding: 7px 10px;
+				font-size: 0.82rem;
+				font-weight: 700;
+				line-height: 1;
+			}
+
+			@media (max-width: 720px) {
+				.page-title {
+					font-size: 2.45rem;
+				}
+
+				.section {
+					padding: 22px;
+				}
+			}
+		</style>
+	</head>
+
+	<body>
+		<Header />
+
+		<main>
+			<h1 class="page-title">關於我</h1>
+			<p class="page-desc">
+				這裡先放一版研究定位與網站介紹文字，之後可以再依課程、實驗室與研究題目細修。
+			</p>
+
+			<div class="content-grid">
+				<section class="section">
+					<h2>研究定位</h2>
+					<p>
+						我是曾智凱，目前以計算化學、材料模型建構與研究工作流程整理為主要學習方向。這個網站會持續累積我的日常任務、研究筆記、文獻摘要與工具開發紀錄，讓零散的學習過程變成可以回頭檢索的研究脈絡。
+					</p>
+				</section>
+
+				<section class="section">
+					<h2>目前研究方向</h2>
+					<ul>
+						<li>密度泛函理論 DFT 與 VASP 計算</li>
+						<li>表面、晶面與 slab 結構模型建構</li>
+						<li>ASE、Python 與研究自動化工具開發</li>
+						<li>HPC、Linux 與可復現的計算環境</li>
+						<li>AI 輔助文獻整理與研究管理流程</li>
+					</ul>
+				</section>
+
+				<section class="section">
+					<h2>網站用途</h2>
+					<p>
+						這個網站目前定位為個人研究管理中心：公開頁面用來展示學習日誌與整理成果；本人登入後則可新增任務、撰寫研究筆記，並透過週報頁回顧一週累積。
+					</p>
+					<div class="pill-row">
+						<span class="pill">Python</span>
+						<span class="pill">ASE</span>
+						<span class="pill">VASP</span>
+						<span class="pill">Astro</span>
+						<span class="pill">Cloudflare D1</span>
+						<span class="pill">OpenAlex</span>
+					</div>
+				</section>
+			</div>
+		</main>
+
+		<Footer />
+	</body>
+</html>

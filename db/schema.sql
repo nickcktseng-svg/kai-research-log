@@ -64,9 +64,28 @@ CREATE TABLE IF NOT EXISTS weekly_report_categories (
   FOREIGN KEY (report_id) REFERENCES weekly_reports(id) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS journal_entries (
+  id TEXT PRIMARY KEY,
+  slug TEXT NOT NULL UNIQUE,
+  title TEXT NOT NULL,
+  summary TEXT NOT NULL DEFAULT '',
+  category TEXT NOT NULL DEFAULT '研究日誌',
+  tags_json TEXT NOT NULL DEFAULT '[]',
+  content_html TEXT NOT NULL DEFAULT '',
+  status TEXT NOT NULL DEFAULT 'draft'
+    CHECK (status IN ('draft', 'published')),
+  entry_date TEXT NOT NULL DEFAULT CURRENT_DATE,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status);
 CREATE INDEX IF NOT EXISTS idx_tasks_type ON tasks(type);
 CREATE INDEX IF NOT EXISTS idx_tasks_date ON tasks(task_date);
 CREATE INDEX IF NOT EXISTS idx_tasks_week ON tasks(week);
 CREATE INDEX IF NOT EXISTS idx_tasks_priority ON tasks(priority);
 CREATE INDEX IF NOT EXISTS idx_weekly_reports_week ON weekly_reports(week);
+CREATE INDEX IF NOT EXISTS idx_journal_entries_status ON journal_entries(status);
+CREATE INDEX IF NOT EXISTS idx_journal_entries_date ON journal_entries(entry_date);
+CREATE INDEX IF NOT EXISTS idx_journal_entries_category ON journal_entries(category);
+CREATE INDEX IF NOT EXISTS idx_journal_entries_slug ON journal_entries(slug);

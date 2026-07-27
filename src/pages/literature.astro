@@ -1,569 +1,1411 @@
 ---
 import BaseHead from '../components/BaseHead.astro';
-import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
+import Header from '../components/Header.astro';
 import { SITE_TITLE } from '../consts';
 ---
 
 <!doctype html>
 <html lang="zh-TW">
 	<head>
-		<BaseHead title={`文獻導航 | ${SITE_TITLE}`} description="搜尋與整理學術文獻" />
+		<BaseHead
+			title={`文獻總結系統 | ${SITE_TITLE}`}
+			description="搜尋、上傳與整理學術文獻"
+		/>
+
 		<style>
 			main {
 				width: 100%;
-				max-width: 1000px;
+				max-width: 1100px;
 				margin: 0 auto;
 				padding: 40px 20px;
 			}
+
 			.page-title {
+				margin: 0 0 10px;
+				color: #111;
 				font-size: 3.5rem;
 				font-weight: 800;
-				margin-bottom: 10px;
-				letter-spacing: -0.02em;
-				color: #111;
+				letter-spacing: 0;
 			}
+
 			.page-desc {
+				max-width: 760px;
+				margin: 0 0 34px;
 				color: #666;
 				font-size: 1.1rem;
-				margin-bottom: 40px;
-				max-width: 600px;
-				line-height: 1.6;
+				line-height: 1.8;
 			}
-			/* 搜尋區塊 */
+
+			.section {
+				margin-bottom: 56px;
+			}
+
+			.section-heading {
+				display: flex;
+				align-items: flex-end;
+				justify-content: space-between;
+				gap: 16px;
+				margin-bottom: 18px;
+			}
+
+			.section-title {
+				margin: 0;
+				color: #111;
+				font-size: 1.8rem;
+			}
+
+			.section-desc {
+				margin: 6px 0 0;
+				color: #666;
+				font-size: 0.96rem;
+				line-height: 1.7;
+			}
+
+			.panel,
+			.paper-card,
+			.empty-state {
+				border: 1px solid #eee;
+				border-radius: 8px;
+				background: #fff;
+				box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+			}
+
+			.panel {
+				overflow: hidden;
+			}
+
+			.panel-header,
+			.panel-body {
+				padding: 22px;
+			}
+
+			.panel-header {
+				border-bottom: 1px solid #eee;
+			}
+
+			.panel-title {
+				margin: 0;
+				color: #111;
+				font-size: 1.18rem;
+			}
+
+			.panel-desc,
+			.status-message,
+			.help-text {
+				margin: 8px 0 0;
+				color: #666;
+				font-size: 0.94rem;
+				line-height: 1.7;
+			}
+
+			.analyzer-grid {
+				display: grid;
+				grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
+				gap: 24px;
+				align-items: start;
+			}
+
+			.form-grid {
+				display: grid;
+				gap: 16px;
+			}
+
+			.field {
+				display: grid;
+				gap: 8px;
+			}
+
+			label {
+				color: #333;
+				font-size: 0.9rem;
+				font-weight: 700;
+			}
+
+			input,
+			select,
+			textarea {
+				width: 100%;
+				border: 1px solid #e5e7eb;
+				border-radius: 8px;
+				background: #fff;
+				color: #111;
+				font: inherit;
+				font-size: 0.95rem;
+				line-height: 1.55;
+			}
+
+			input,
+			select {
+				min-height: 42px;
+				padding: 9px 12px;
+			}
+
+			textarea {
+				min-height: 260px;
+				padding: 12px;
+				resize: vertical;
+			}
+
+			input:focus,
+			select:focus,
+			textarea:focus {
+				outline: 2px solid #111;
+				outline-offset: 2px;
+				border-color: #111;
+			}
+
+			.upload-box {
+				border: 1px dashed #d1d5db;
+				border-radius: 8px;
+				padding: 16px;
+				background: #fafafa;
+			}
+
+			.mode-grid {
+				display: grid;
+				grid-template-columns: repeat(2, minmax(0, 1fr));
+				gap: 10px;
+			}
+
+			.mode-button,
+			.button,
+			.search-btn,
+			.page-btn,
+			.btn-copy,
+			.btn-open,
+			.btn-analyze {
+				display: inline-flex;
+				align-items: center;
+				justify-content: center;
+				border: 1px solid #e5e7eb;
+				border-radius: 999px;
+				background: #fff;
+				color: #333;
+				font: inherit;
+				font-size: 0.92rem;
+				font-weight: 700;
+				text-decoration: none;
+				cursor: pointer;
+				transition:
+					background-color 0.2s ease,
+					border-color 0.2s ease,
+					color 0.2s ease,
+					transform 0.2s ease;
+			}
+
+			.mode-button {
+				min-height: 44px;
+				padding: 9px 12px;
+			}
+
+			.mode-button:hover,
+			.button:hover,
+			.search-btn:hover,
+			.page-btn:hover:not(:disabled),
+			.btn-copy:hover,
+			.btn-open:hover,
+			.btn-analyze:hover {
+				background: #f3f4f6;
+				border-color: #d1d5db;
+				transform: translateY(-2px);
+			}
+
+			.mode-button.active,
+			.button-primary,
+			.search-btn,
+			.btn-analyze {
+				background: #111;
+				border-color: #111;
+				color: #fff;
+			}
+
+			.mode-button.active:hover,
+			.button-primary:hover,
+			.search-btn:hover,
+			.btn-analyze:hover {
+				background: #333;
+				border-color: #333;
+			}
+
+			.button-row,
+			.action-btns {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 10px;
+			}
+
+			.output-view {
+				min-height: 520px;
+				padding: 24px;
+				border: 1px solid #e5e7eb;
+				border-radius: 8px;
+				background: #fcfcfc;
+				color: #222;
+				line-height: 1.85;
+			}
+
+			.output-view h2,
+			.output-view h3 {
+				color: #111;
+				line-height: 1.35;
+			}
+
+			.output-view h2 {
+				margin: 0 0 18px;
+				font-size: 1.4rem;
+			}
+
+			.output-view h3 {
+				margin: 26px 0 10px;
+				font-size: 1.05rem;
+			}
+
+			.output-view p,
+			.output-view ul,
+			.output-view ol {
+				margin: 0 0 16px;
+			}
+
+			.output-view ul,
+			.output-view ol {
+				padding-left: 1.2rem;
+			}
+
+			.output-placeholder {
+				color: #777;
+			}
+
 			.search-box {
 				display: flex;
-				gap: 12px;
-				margin-bottom: 20px;
 				flex-wrap: wrap;
+				gap: 12px;
+				margin-bottom: 16px;
 				align-items: center;
 			}
+
 			.search-input {
 				flex: 1;
 				min-width: 250px;
-				padding: 16px 24px;
-				font-size: 1.1rem;
-				border: 1px solid #eaeaea;
-				border-radius: 30px;
-				background-color: #fcfcfc;
-				transition: all 0.2s ease;
-			}
-			.search-input:focus {
-				outline: none;
-				border-color: #111;
-				background-color: #fff;
-			}
-			.sort-select {
 				padding: 16px 20px;
-				font-size: 1rem;
-				border: 1px solid #eaeaea;
-				border-radius: 30px;
+				font-size: 1.05rem;
+				border-radius: 999px;
 				background-color: #fcfcfc;
-				color: #111;
-				cursor: pointer;
-				outline: none;
 			}
+
+			.sort-select {
+				width: auto;
+				min-width: 220px;
+				padding: 14px 18px;
+				border-radius: 999px;
+				background-color: #fcfcfc;
+			}
+
 			.search-btn {
-				padding: 16px 32px;
-				font-size: 1.1rem;
-				font-weight: 600;
-				color: #fff;
-				background-color: #111;
-				border: none;
-				border-radius: 30px;
-				cursor: pointer;
-				transition: transform 0.2s ease, background-color 0.2s ease;
+				min-height: 50px;
+				padding: 13px 24px;
 			}
-			.search-btn:hover {
-				background-color: #333;
-				transform: translateY(-2px);
-			}
-			/* OA 開關 */
+
 			.oa-toggle {
 				display: flex;
 				align-items: center;
 				gap: 8px;
-				font-size: 0.95rem;
+				margin-bottom: 24px;
 				color: #555;
-				cursor: pointer;
-				margin-bottom: 30px;
+				font-size: 0.95rem;
 				font-weight: 600;
+				cursor: pointer;
 			}
+
 			.oa-toggle input {
 				width: 18px;
 				height: 18px;
 				cursor: pointer;
 			}
-			/* 狀態提示 */
-			#statusMsg {
-				margin-bottom: 30px;
-				color: #666;
-				font-weight: 600;
-			}
-			/* 文獻卡片 */
+
 			.paper-list {
-				display: flex;
-				flex-direction: column;
-				gap: 24px;
+				display: grid;
+				gap: 20px;
 			}
+
 			.paper-card {
-				background: #fdfdfd;
-				border: 1px solid #eaeaea;
-				border-radius: 20px;
-				padding: 32px;
-				position: relative;
-				transition: transform 0.2s ease, box-shadow 0.2s ease;
+				padding: 26px;
 			}
-			.paper-card:hover {
-				transform: translateY(-3px);
-				box-shadow: 0 12px 32px rgba(0, 0, 0, 0.06);
-			}
+
 			.card-header {
 				display: flex;
 				justify-content: space-between;
-				align-items: flex-start;
-				gap: 20px;
-				margin-bottom: 20px;
+				gap: 18px;
+				margin-bottom: 16px;
 			}
-			.card-meta-top { flex: 1; }
-			.stars {
-				display: block;
-				font-size: 0.9rem;
-				font-weight: 700;
-				color: #555;
-				margin-bottom: 8px;
-			}
+
 			.paper-title {
-				font-size: 1.5rem;
-				margin: 0 0 12px 0;
+				margin: 0 0 10px;
 				color: #111;
-				line-height: 1.3;
-				font-weight: 800;
+				font-size: 1.35rem;
+				line-height: 1.4;
 			}
-			.paper-subtitle {
-				font-size: 0.95rem;
+
+			.paper-subtitle,
+			.paper-abstract,
+			.recommend-list,
+			.empty-state {
 				color: #555;
+				line-height: 1.75;
+			}
+
+			.paper-subtitle {
 				margin: 0;
-				line-height: 1.6;
+				font-size: 0.94rem;
 			}
-			.oa-badge {
-				display: inline-block;
-				background: #ecfdf5;
-				color: #059669;
-				padding: 2px 8px;
-				border-radius: 12px;
-				font-size: 0.8rem;
-				font-weight: 700;
-				margin-left: 8px;
-				vertical-align: middle;
+
+			.paper-abstract {
+				margin: 0 0 18px;
 			}
-			/* 分數徽章 */
+
 			.score-badge {
+				flex: 0 0 auto;
+				min-width: 72px;
+				border-radius: 8px;
 				background: #111;
 				color: #fff;
-				border-radius: 16px;
-				padding: 12px 16px;
+				padding: 12px 14px;
 				text-align: center;
-				min-width: 70px;
 			}
+
 			.score-number {
 				display: block;
-				font-size: 1.6rem;
+				font-size: 1.5rem;
 				font-weight: 800;
 				line-height: 1;
-				margin-bottom: 4px;
 			}
+
 			.score-label {
 				display: block;
-				font-size: 0.75rem;
-				opacity: 0.8;
+				margin-top: 4px;
+				font-size: 0.76rem;
+				opacity: 0.78;
 			}
-			/* 摘要與推薦 */
-			.paper-abstract {
-				font-size: 1rem;
-				color: #444;
-				line-height: 1.7;
-				margin-bottom: 20px;
-				display: -webkit-box;
-				-webkit-line-clamp: 3;
-				-webkit-box-orient: vertical;
-				overflow: hidden;
-			}
-			.recommend-box { margin-bottom: 24px; }
-			.recommend-box h4 {
-				margin: 0 0 10px 0;
-				font-size: 1rem;
-				color: #111;
-				font-weight: 700;
-			}
-			.recommend-box ul {
-				margin: 0;
-				padding-left: 20px;
-				color: #555;
-				font-size: 0.95rem;
-				line-height: 1.6;
-			}
-			/* 底部操作按鈕 */
-			.action-btns {
+
+			.pill-row {
 				display: flex;
-				gap: 12px;
 				flex-wrap: wrap;
+				gap: 8px;
+				margin-bottom: 16px;
 			}
-			.btn-analyze, .btn-copy {
+
+			.pill {
+				display: inline-flex;
+				align-items: center;
+				border-radius: 999px;
+				background: #f3f4f6;
+				color: #444;
+				padding: 7px 10px;
+				font-size: 0.78rem;
+				font-weight: 700;
+				line-height: 1;
+			}
+
+			.pill-dark {
 				background: #111;
 				color: #fff;
-				border: none;
-				padding: 10px 24px;
-				border-radius: 20px;
-				font-weight: 600;
-				cursor: pointer;
-				text-decoration: none;
-				transition: background 0.2s;
 			}
-			.btn-copy { background: #eab308; color: #111; }
-			.btn-copy:hover { background: #ca8a04; }
-			.btn-analyze:hover { background: #333; }
-			.btn-open {
-				background: #f5f5f5;
-				color: #111;
-				border: 1px solid #ddd;
-				padding: 10px 24px;
-				border-radius: 20px;
-				font-weight: 600;
-				cursor: pointer;
-				text-decoration: none;
+
+			.recommend-list {
+				margin: 0 0 18px;
+				padding-left: 1.2rem;
 			}
-			.btn-open:hover { background: #eaeaea; }
-			
-			/* ---------- 全新分頁系統樣式 ---------- */
+
 			.pagination {
 				display: flex;
 				justify-content: center;
 				align-items: center;
 				gap: 8px;
-				margin-top: 50px;
+				margin-top: 36px;
 				flex-wrap: wrap;
 			}
+
 			.page-btn {
-				background: #fff;
-				color: #111;
-				border: 1px solid #ddd;
-				padding: 8px 16px;
+				min-height: 38px;
+				padding: 8px 14px;
 				border-radius: 8px;
-				cursor: pointer;
-				font-weight: 600;
-				font-size: 0.95rem;
-				transition: all 0.2s;
 			}
-			.page-btn:hover:not(:disabled) {
-				background: #f5f5f5;
-				border-color: #bbb;
-			}
+
 			.page-btn.active {
 				background: #111;
 				color: #fff;
 				border-color: #111;
 			}
+
 			.page-btn:disabled {
-				opacity: 0.4;
+				opacity: 0.45;
 				cursor: not-allowed;
-				background: #fafafa;
+				transform: none;
 			}
-			.page-info {
-				color: #888;
-				font-size: 0.95rem;
-				margin-left: 8px;
+
+			.status-message {
+				margin-bottom: 24px;
+				font-weight: 700;
+			}
+
+			@media (max-width: 860px) {
+				.analyzer-grid {
+					grid-template-columns: 1fr;
+				}
+
+				.mode-grid {
+					grid-template-columns: 1fr;
+				}
 			}
 
 			@media (max-width: 720px) {
-				.search-box { flex-direction: column; align-items: stretch; }
-				.card-header { flex-direction: column-reverse; }
-				.score-badge { align-self: flex-start; }
+				main {
+					padding: 32px 18px;
+				}
+
+				.page-title {
+					font-size: 2.45rem;
+				}
+
+				.section-heading,
+				.card-header {
+					flex-direction: column;
+					align-items: flex-start;
+				}
+
+				.search-box {
+					flex-direction: column;
+					align-items: stretch;
+				}
+
+				.sort-select {
+					width: 100%;
+				}
 			}
 		</style>
 	</head>
+
 	<body>
 		<Header />
+
 		<main>
-			<h1 class="page-title">文獻導航系統</h1>
-			<p class="page-desc">輸入研究主題（建議使用英文），系統將透過 OpenAlex 資料庫搜尋文獻，並依照指定的條件進行排序與分析。</p>
+			<h1 class="page-title">文獻總結系統</h1>
+			<p class="page-desc">
+				上傳或貼上一篇論文內容，先用八種固定視角做快速整理；也可以繼續用 OpenAlex 搜尋下一篇文獻。
+			</p>
 
-			<div class="search-box">
-				<input type="text" id="paperSearchInput" class="search-input" placeholder="例如: organic synthesis, complexometric titration..." />
-				<select id="sortSelect" class="sort-select">
-					<option value="relevance_score:desc">依照關聯度排序</option>
-					<option value="cited_by_count:desc">依照引用次數排序</option>
-					<option value="publication_year:desc">依照年份排序 (新至舊)</option>
-				</select>
-				<button id="searchBtn" class="search-btn">搜尋論文</button>
-			</div>
-			
-			<label class="oa-toggle">
-				<input type="checkbox" id="oaCheckbox" />
-				<span>🟢 只顯示可免費下載的公開文獻 (Open Access)</span>
-			</label>
+			<section class="section" aria-labelledby="analyzerTitle">
+				<div class="section-heading">
+					<div>
+						<h2 id="analyzerTitle" class="section-title">Paper Lens 分析</h2>
+						<p class="section-desc">
+							目前是瀏覽器端規則式整理，適合先產生讀書會、報告與研究筆記大綱。
+						</p>
+					</div>
+				</div>
 
-			<div id="statusMsg"></div>
-			<div id="paperResults" class="paper-list"></div>
-			
-			<div id="paginationContainer" class="pagination"></div>
+				<div class="analyzer-grid">
+					<section class="panel" aria-labelledby="inputTitle">
+						<div class="panel-header">
+							<h3 class="panel-title" id="inputTitle">論文內容</h3>
+							<p class="panel-desc">
+								可上傳 txt、md、html 或嘗試讀取 pdf；若 PDF 文字被壓縮，請直接貼上摘要或全文。
+							</p>
+						</div>
+						<div class="panel-body">
+							<div class="form-grid">
+								<div class="upload-box">
+									<label for="paperFile">上傳論文檔案</label>
+									<input id="paperFile" type="file" accept=".txt,.md,.html,.htm,.pdf,text/*,application/pdf" />
+									<p class="help-text" id="fileStatus">尚未選擇檔案。</p>
+								</div>
+
+								<div class="field">
+									<label for="paperTitle">論文標題</label>
+									<input id="paperTitle" type="text" placeholder="可手動填入，或從搜尋結果帶入" />
+								</div>
+
+								<div class="field">
+									<label for="paperCitation">引用資訊</label>
+									<input id="paperCitation" type="text" placeholder="作者、年份、期刊、DOI" />
+								</div>
+
+								<div class="field">
+									<label for="paperText">論文文字</label>
+									<textarea id="paperText" placeholder="貼上 abstract、introduction、methods、results 或全文。"></textarea>
+								</div>
+
+								<div class="field">
+									<label>分析方式</label>
+									<div class="mode-grid" id="modeGrid"></div>
+								</div>
+
+								<div class="button-row">
+									<button type="button" class="button button-primary" id="analyzeButton">
+										產生分析
+									</button>
+									<button type="button" class="button" id="copyPromptButton">
+										複製分析提示
+									</button>
+								</div>
+							</div>
+						</div>
+					</section>
+
+					<section class="panel" aria-labelledby="outputTitle">
+						<div class="panel-header">
+							<h3 class="panel-title" id="outputTitle">分析結果</h3>
+							<p class="panel-desc">
+								結果可以直接複製成 Markdown，或下載後再整理到研究筆記。
+							</p>
+						</div>
+						<div class="panel-body">
+							<div class="button-row">
+								<button type="button" class="button" id="copyMarkdownButton">
+									複製 Markdown
+								</button>
+								<button type="button" class="button" id="downloadMarkdownButton">
+									下載結果
+								</button>
+							</div>
+							<div class="output-view" id="analysisOutput">
+								<p class="output-placeholder">
+									選擇分析方式後按下「產生分析」，這裡會顯示摘要、關鍵概念與可追問的研究問題。
+								</p>
+							</div>
+						</div>
+					</section>
+				</div>
+			</section>
+
+			<section class="section" aria-labelledby="searchTitle">
+				<div class="section-heading">
+					<div>
+						<h2 id="searchTitle" class="section-title">OpenAlex 文獻搜尋</h2>
+						<p class="section-desc">
+							用研究主題搜尋文獻，找到候選文章後可把摘要帶入上方分析器。
+						</p>
+					</div>
+				</div>
+
+				<div class="search-box">
+					<input
+						type="text"
+						id="paperSearchInput"
+						class="search-input"
+						placeholder="例如: VASP surface adsorption, density functional theory"
+					/>
+					<select id="sortSelect" class="sort-select">
+						<option value="relevance_score:desc">依關聯度排序</option>
+						<option value="cited_by_count:desc">依引用次數排序</option>
+						<option value="publication_year:desc">依年份排序</option>
+					</select>
+					<button id="searchBtn" class="search-btn">搜尋論文</button>
+				</div>
+
+				<label class="oa-toggle">
+					<input type="checkbox" id="oaCheckbox" />
+					<span>只顯示可免費下載的公開文獻</span>
+				</label>
+
+				<p id="statusMsg" class="status-message"></p>
+				<div id="paperResults" class="paper-list"></div>
+				<div id="paginationContainer" class="pagination"></div>
+			</section>
 		</main>
+
 		<Footer />
 
 		<script>
 			document.addEventListener('DOMContentLoaded', () => {
-				const searchInput = document.getElementById('paperSearchInput');
-				const sortSelect = document.getElementById('sortSelect');
-				const oaCheckbox = document.getElementById('oaCheckbox');
-				const searchBtn = document.getElementById('searchBtn');
-				const statusMsg = document.getElementById('statusMsg');
-				const resultsContainer = document.getElementById('paperResults');
-				const paginationContainer = document.getElementById('paginationContainer');
+				const modes = [
+					{
+						id: 'quick',
+						label: '五分鐘速覽',
+						prompt: '請用五分鐘速覽方式整理這篇論文：研究問題、方法、主要發現、限制與我下一步該讀哪裡。',
+					},
+					{
+						id: 'prereq',
+						label: '先備知識健檢',
+						prompt: '請列出讀懂這篇論文需要的先備知識，分成已知、需要補強與建議查詢關鍵字。',
+					},
+					{
+						id: 'plain',
+						label: '白話重建',
+						prompt: '請用研究生能快速理解的白話重建這篇論文，避免只翻譯摘要。',
+					},
+					{
+						id: 'concept',
+						label: '概念地圖',
+						prompt: '請把這篇論文整理成概念地圖：核心概念、材料/方法、變因、結果與關係。',
+					},
+					{
+						id: 'method',
+						label: '方法復現',
+						prompt: '請用復現工程師視角整理這篇論文：資料、計算條件、步驟、參數與容易漏掉的細節。',
+					},
+					{
+						id: 'reviewer',
+						label: '二號審稿人',
+						prompt: '請用嚴格審稿人角度指出這篇論文的假設、證據缺口、替代解釋與需要補的實驗或計算。',
+					},
+					{
+						id: 'followup',
+						label: '後續研究題目',
+						prompt: '請根據這篇論文提出後續研究題目，包含可執行問題、所需資料與預期貢獻。',
+					},
+					{
+						id: 'talk',
+						label: '讀書會報告',
+						prompt: '請把這篇論文整理成讀書會報告大綱，包含開場、方法、圖表討論、批判與討論題。',
+					},
+				];
 
-				// 儲存當前的搜尋狀態，避免切換頁面時條件跑掉
+				const refs = {
+					modeGrid: document.querySelector('#modeGrid'),
+					paperFile: document.querySelector('#paperFile'),
+					fileStatus: document.querySelector('#fileStatus'),
+					paperTitle: document.querySelector('#paperTitle'),
+					paperCitation: document.querySelector('#paperCitation'),
+					paperText: document.querySelector('#paperText'),
+					analyzeButton: document.querySelector('#analyzeButton'),
+					copyPromptButton: document.querySelector('#copyPromptButton'),
+					copyMarkdownButton: document.querySelector('#copyMarkdownButton'),
+					downloadMarkdownButton: document.querySelector('#downloadMarkdownButton'),
+					analysisOutput: document.querySelector('#analysisOutput'),
+					searchInput: document.querySelector('#paperSearchInput'),
+					sortSelect: document.querySelector('#sortSelect'),
+					oaCheckbox: document.querySelector('#oaCheckbox'),
+					searchBtn: document.querySelector('#searchBtn'),
+					statusMsg: document.querySelector('#statusMsg'),
+					resultsContainer: document.querySelector('#paperResults'),
+					paginationContainer: document.querySelector('#paginationContainer'),
+				};
+
+				if (!Object.values(refs).every(Boolean)) return;
+
+				let activeMode = modes[0].id;
+				let currentMarkdown = '';
 				let currentQuery = '';
 				let currentSort = '';
 				let currentIsOa = false;
 
-				function reconstructAbstract(invertedIndex) {
-					if (!invertedIndex) return '此篇文獻未提供摘要資料...';
+				const escapeHtml = (value) =>
+					String(value)
+						.replaceAll('&', '&amp;')
+						.replaceAll('<', '&lt;')
+						.replaceAll('>', '&gt;')
+						.replaceAll('"', '&quot;')
+						.replaceAll("'", '&#039;');
+
+				const setFileStatus = (message) => {
+					refs.fileStatus.textContent = message;
+				};
+
+				const setSearchStatus = (message) => {
+					refs.statusMsg.textContent = message;
+				};
+
+				const splitSentences = (text) =>
+					text
+						.replace(/\s+/g, ' ')
+						.split(/(?<=[.!?。！？])\s+/u)
+						.map((sentence) => sentence.trim())
+						.filter((sentence) => sentence.length > 40);
+
+				const extractKeywords = (text) => {
+					const stopWords = new Set([
+						'the',
+						'and',
+						'for',
+						'with',
+						'that',
+						'this',
+						'from',
+						'were',
+						'have',
+						'has',
+						'are',
+						'was',
+						'using',
+						'study',
+						'research',
+						'paper',
+						'results',
+						'method',
+						'方法',
+						'研究',
+						'結果',
+						'本文',
+						'論文',
+					]);
+					const words = text.match(/[\p{Letter}\p{Number}][\p{Letter}\p{Number}-]{2,}/gu) ?? [];
+					const counts = new Map();
+
+					for (const rawWord of words) {
+						const word = rawWord.toLowerCase();
+						if (stopWords.has(word)) continue;
+						counts.set(word, (counts.get(word) ?? 0) + 1);
+					}
+
+					return [...counts.entries()]
+						.sort((a, b) => b[1] - a[1])
+						.slice(0, 12)
+						.map(([word]) => word);
+				};
+
+				const pickSentences = (text, keywords, limit) => {
+					const sentences = splitSentences(text);
+					const scored = sentences.map((sentence, index) => {
+						const lower = sentence.toLowerCase();
+						const score = keywords.reduce(
+							(total, keyword) => total + (lower.includes(keyword) ? 1 : 0),
+							0,
+						);
+						return { sentence, score: score * 10 - index };
+					});
+
+					const selected = scored
+						.sort((a, b) => b.score - a.score)
+						.slice(0, limit)
+						.map((item) => item.sentence);
+
+					return selected.length > 0 ? selected : sentences.slice(0, limit);
+				};
+
+				const findSection = (text, names) => {
+					const lower = text.toLowerCase();
+					for (const name of names) {
+						const start = lower.indexOf(name.toLowerCase());
+						if (start >= 0) {
+							const nextHeading = lower.slice(start + name.length).search(/\n\s*[0-9]?\s*[a-z ]{4,30}\n/i);
+							const end =
+								nextHeading > 0
+									? start + name.length + nextHeading
+									: start + 1800;
+							return text.slice(start, end).replace(/\s+/g, ' ').trim();
+						}
+					}
+
+					return '';
+				};
+
+				const createContext = () => {
+					const text = refs.paperText.value.trim();
+					const title = refs.paperTitle.value.trim() || '未命名論文';
+					const citation = refs.paperCitation.value.trim() || '尚未填寫引用資訊';
+					const keywords = extractKeywords(text);
+					const keySentences = pickSentences(text, keywords, 7);
+					const abstract = findSection(text, ['abstract', '摘要']) || keySentences[0] || '';
+					const methods = findSection(text, [
+						'methods',
+						'methodology',
+						'experimental',
+						'computational details',
+						'方法',
+						'計算細節',
+					]);
+					const conclusion = findSection(text, [
+						'conclusion',
+						'conclusions',
+						'discussion',
+						'結論',
+						'討論',
+					]);
+
+					return {
+						text,
+						title,
+						citation,
+						keywords,
+						keySentences,
+						abstract,
+						methods,
+						conclusion,
+					};
+				};
+
+				const bulletList = (items, fallback) => {
+					const values = items.filter(Boolean);
+					if (values.length === 0) return `- ${fallback}`;
+					return values.map((item) => `- ${item}`).join('\n');
+				};
+
+				const createQuickScan = (context) => `## ${context.title}
+
+### 五分鐘速覽
+- 引用資訊：${context.citation}
+- 核心關鍵字：${context.keywords.slice(0, 8).join('、') || '尚未抓到明確關鍵字'}
+
+### 研究問題
+${bulletList(context.keySentences.slice(0, 2), '先從摘要與 introduction 找出作者真正要回答的問題。')}
+
+### 主要發現
+${bulletList(context.keySentences.slice(2, 5), '目前文字不足，建議補上 results 或 conclusion 後再整理。')}
+
+### 需要注意
+- 先確認研究對象、實驗或計算條件是否與自己的題目相近。
+- 讀圖表時優先看變因、對照組與作者用來支持結論的證據。`;
+
+				const createPrereq = (context) => `## ${context.title}
+
+### 先備知識健檢
+- 主題詞：${context.keywords.slice(0, 10).join('、') || '尚未抓到明確主題詞'}
+
+### 讀之前要先懂
+${bulletList(
+	context.keywords.slice(0, 5).map((keyword) => `確認「${keyword}」在此領域中的定義與常見用途。`),
+	'先補充研究背景與關鍵術語。',
+)}
+
+### 建議查詢
+${bulletList(
+	context.keywords.slice(5, 10).map((keyword) => `${keyword} review paper`),
+	'用論文標題加上 review、tutorial 或 benchmark 搜尋補充材料。',
+)}
+
+### 讀完自測
+- 我能不能用三句話說明作者想解決什麼問題？
+- 我能不能指出這篇論文最重要的一張圖或一組數據？
+- 我能不能說明這個方法與我自己的研究有什麼關係？`;
+
+				const createPlain = (context) => `## ${context.title}
+
+### 白話重建
+這篇論文可以先理解成：作者把一個研究問題拆成可測量或可計算的幾個部分，再用特定方法確認哪些因素最影響結果。
+
+### 用自己的話說
+${bulletList(context.keySentences.slice(0, 5), '目前文字不足，請貼上摘要、方法與結論後再重建。')}
+
+### 我需要帶走的東西
+- 這篇文章的真正價值不只是結論，而是它如何設計比較與驗證。
+- 如果要接到自己的研究，優先整理材料系統、計算設定、資料處理方式與限制。`;
+
+				const createConceptMap = (context) => `## ${context.title}
+
+### 概念地圖
+- 中心問題：${context.keySentences[0] || '尚未從文字中判斷。'}
+- 主要概念：${context.keywords.slice(0, 6).join('、') || '尚未抓到明確概念'}
+- 方法與工具：${context.methods || '尚未偵測到方法段落。'}
+- 結果線索：${context.conclusion || context.keySentences[1] || '尚未偵測到結果或結論段落。'}
+
+### 關係整理
+${bulletList(
+	context.keywords.slice(0, 5).map((keyword, index) => `${keyword} 可能是第 ${index + 1} 個需要放進筆記的概念節點。`),
+	'先把材料、方法、結果、限制四類節點分開整理。',
+)}`;
+
+				const createMethod = (context) => `## ${context.title}
+
+### 方法復現
+- 引用資訊：${context.citation}
+
+### 可復現資訊
+${bulletList(
+	context.methods ? [context.methods] : context.keySentences.slice(0, 3),
+	'目前沒有抓到方法段落，請補上 methods、computational details 或 supporting information。',
+)}
+
+### 復現檢查清單
+- 研究系統或樣品是否描述清楚。
+- 計算或實驗參數是否足以重做。
+- 是否有初始結構、資料集、程式碼或 supplementary information。
+- 輸出結果是否有和圖表、表格或文中數值互相對應。`;
+
+				const createReviewer = (context) => `## ${context.title}
+
+### 二號審稿人視角
+
+### 目前支持結論的證據
+${bulletList(context.keySentences.slice(0, 4), '目前文字不足，請補上 results 或 discussion。')}
+
+### 可能的疑問
+- 作者是否排除了其他解釋？
+- 方法設定是否足以支持最強的結論？
+- 樣本、材料或計算條件是否太窄？
+- 結論是否有超出數據能支撐的範圍？
+
+### 可以補強的驗證
+- 增加對照組或 benchmark。
+- 補敏感度測試或參數掃描。
+- 把關鍵圖表與原始數據連起來檢查。`;
+
+				const createFollowup = (context) => `## ${context.title}
+
+### 後續研究題目
+${bulletList(
+	context.keywords.slice(0, 5).map((keyword) => `以 ${keyword} 為核心，設計一個更小範圍、可驗證的延伸問題。`),
+	'先從作者的限制與未完成問題中挑一個可執行題目。',
+)}
+
+### 可以立刻做的小步驟
+- 建立相關文獻清單，分成背景、方法、benchmark 三類。
+- 把此論文的材料系統或計算條件轉成自己的任務。
+- 針對一個關鍵圖表寫出「如果我要重做，需要哪些資料」。`;
+
+				const createTalk = (context) => `## ${context.title}
+
+### 讀書會報告大綱
+1. 開場：這篇論文想回答什麼問題。
+2. 背景：為什麼這個問題值得研究。
+3. 方法：作者如何設計實驗或計算。
+4. 結果：最重要的圖表與證據。
+5. 批判：限制、假設與可能替代解釋。
+6. 延伸：這篇論文可以如何接到我的研究。
+
+### 可直接放進簡報的重點
+${bulletList(context.keySentences.slice(0, 5), '目前文字不足，請補上摘要與結論後再產生重點。')}
+
+### 討論題
+- 這篇論文最強的證據是哪一個？
+- 如果要重做，最容易卡住的部分是什麼？
+- 對我的研究題目而言，最值得借用的是方法、材料還是分析邏輯？`;
+
+				const analyzers = {
+					quick: createQuickScan,
+					prereq: createPrereq,
+					plain: createPlain,
+					concept: createConceptMap,
+					method: createMethod,
+					reviewer: createReviewer,
+					followup: createFollowup,
+					talk: createTalk,
+				};
+
+				const markdownToHtml = (markdown) => {
+					const lines = markdown.split('\n');
+					let html = '';
+					let inList = false;
+
+					const closeList = () => {
+						if (inList) {
+							html += '</ul>';
+							inList = false;
+						}
+					};
+
+					for (const line of lines) {
+						const trimmed = line.trim();
+						if (!trimmed) {
+							closeList();
+							continue;
+						}
+
+						if (trimmed.startsWith('### ')) {
+							closeList();
+							html += `<h3>${escapeHtml(trimmed.slice(4))}</h3>`;
+							continue;
+						}
+
+						if (trimmed.startsWith('## ')) {
+							closeList();
+							html += `<h2>${escapeHtml(trimmed.slice(3))}</h2>`;
+							continue;
+						}
+
+						if (/^\d+\.\s/.test(trimmed)) {
+							closeList();
+							html += `<p>${escapeHtml(trimmed)}</p>`;
+							continue;
+						}
+
+						if (trimmed.startsWith('- ')) {
+							if (!inList) {
+								html += '<ul>';
+								inList = true;
+							}
+							html += `<li>${escapeHtml(trimmed.slice(2))}</li>`;
+							continue;
+						}
+
+						closeList();
+						html += `<p>${escapeHtml(trimmed)}</p>`;
+					}
+
+					closeList();
+					return html;
+				};
+
+				const renderModes = () => {
+					for (const mode of modes) {
+						const button = document.createElement('button');
+						button.type = 'button';
+						button.className = `mode-button ${mode.id === activeMode ? 'active' : ''}`;
+						button.dataset.mode = mode.id;
+						button.setAttribute('aria-pressed', String(mode.id === activeMode));
+						button.textContent = mode.label;
+						refs.modeGrid.append(button);
+					}
+				};
+
+				const updateModeButtons = () => {
+					refs.modeGrid.querySelectorAll('[data-mode]').forEach((button) => {
+						const isActive = button.dataset.mode === activeMode;
+						button.classList.toggle('active', isActive);
+						button.setAttribute('aria-pressed', String(isActive));
+					});
+				};
+
+				const analyze = () => {
+					const context = createContext();
+					if (context.text.length < 120) {
+						currentMarkdown = '';
+						refs.analysisOutput.innerHTML =
+							'<p class="output-placeholder">請先上傳或貼上更多論文文字，至少包含摘要或主要段落。</p>';
+						return;
+					}
+
+					currentMarkdown = analyzers[activeMode](context);
+					refs.analysisOutput.innerHTML = markdownToHtml(currentMarkdown);
+				};
+
+				const copyText = async (text, successMessage) => {
+					if (!text) return;
+					await navigator.clipboard.writeText(text);
+					setFileStatus(successMessage);
+				};
+
+				const activePrompt = () => {
+					const mode = modes.find((item) => item.id === activeMode) ?? modes[0];
+					return `${mode.prompt}\n\n論文標題：${refs.paperTitle.value.trim() || '未命名論文'}\n引用資訊：${refs.paperCitation.value.trim() || '尚未填寫'}\n\n論文內容：\n${refs.paperText.value.trim()}`;
+				};
+
+				const downloadMarkdown = () => {
+					if (!currentMarkdown) return;
+					const blob = new Blob([currentMarkdown], { type: 'text/markdown;charset=utf-8' });
+					const url = URL.createObjectURL(blob);
+					const anchor = document.createElement('a');
+					const filename = `${createSlug(refs.paperTitle.value) || 'paper-analysis'}.md`;
+					anchor.href = url;
+					anchor.download = filename;
+					anchor.click();
+					URL.revokeObjectURL(url);
+				};
+
+				const readPdfText = async (file) => {
+					const buffer = await file.arrayBuffer();
+					const bytes = new Uint8Array(buffer);
+					let binary = '';
+					const chunkSize = 16_384;
+
+					for (let index = 0; index < bytes.length; index += chunkSize) {
+						binary += String.fromCharCode(...bytes.slice(index, index + chunkSize));
+					}
+
+					const literalMatches = [...binary.matchAll(/\(([^()]{12,})\)/g)]
+						.map((match) => match[1])
+						.join(' ');
+					return literalMatches
+						.replace(/\\([()\\])/g, '$1')
+						.replace(/\\n|\\r/g, ' ')
+						.replace(/[^\x09\x0a\x0d\x20-\uFFFF]/g, ' ')
+						.replace(/\s+/g, ' ')
+						.trim();
+				};
+
+				const readFile = async (file) => {
+					if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
+						const text = await readPdfText(file);
+						if (text.length < 400) {
+							setFileStatus('PDF 文字可能被壓縮，建議改貼上全文或摘要。');
+						} else {
+							setFileStatus(`已讀取 PDF：${file.name}`);
+						}
+						return text;
+					}
+
+					setFileStatus(`已讀取檔案：${file.name}`);
+					return file.text();
+				};
+
+				refs.modeGrid.addEventListener('click', (event) => {
+					const target = event.target;
+					if (!(target instanceof Element)) return;
+					const button = target.closest('[data-mode]');
+					if (!(button instanceof HTMLElement)) return;
+					activeMode = button.dataset.mode || modes[0].id;
+					updateModeButtons();
+					if (refs.paperText.value.trim()) analyze();
+				});
+
+				refs.paperFile.addEventListener('change', () => {
+					const file = refs.paperFile.files?.[0];
+					if (!file) return;
+
+					readFile(file)
+						.then((text) => {
+							refs.paperText.value = text;
+							if (!refs.paperTitle.value.trim()) {
+								refs.paperTitle.value = file.name.replace(/\.[^.]+$/, '');
+							}
+						})
+						.catch(() => {
+							setFileStatus('檔案讀取失敗，請改用貼上文字。');
+						});
+				});
+
+				refs.analyzeButton.addEventListener('click', analyze);
+				refs.copyMarkdownButton.addEventListener('click', () => {
+					copyText(currentMarkdown, 'Markdown 已複製。');
+				});
+				refs.copyPromptButton.addEventListener('click', () => {
+					copyText(activePrompt(), '分析提示已複製。');
+				});
+				refs.downloadMarkdownButton.addEventListener('click', downloadMarkdown);
+
+				const reconstructAbstract = (invertedIndex) => {
+					if (!invertedIndex) return '此篇文獻未提供摘要資料。';
 					const words = [];
+
 					for (const [word, positions] of Object.entries(invertedIndex)) {
-						// @ts-ignore
-						positions.forEach(pos => { words[pos] = word; });
+						for (const position of positions) {
+							words[position] = word;
+						}
 					}
-					return words.join(' ') + '...';
-				}
 
-				function generateRecommendations(paper, index, currentPage) {
-					let reasons = [];
-					if (currentPage === 1 && index < 3 && currentSort.includes('relevance')) reasons.push('主題高度相關');
-					if (paper.publication_year <= 2018) reasons.push('較早期文獻，可作背景補充');
-					if (paper.publication_year >= 2024) reasons.push('最新發表研究，掌握前沿動態');
-					if (paper.cited_by_count > 500) reasons.push('高引用文獻，可能是領域代表作');
-					if (paper.open_access?.is_oa) reasons.push('此為 Open Access 文獻，可直接免費取得全文');
-					if (reasons.length === 0) reasons.push('符合當前搜尋條件之參考文獻');
-					return reasons.map(r => `<li>${r}</li>`).join('');
-				}
+					return words.join(' ');
+				};
 
-				function calculateDisplayScore(paper, overallIndex) {
-					let baseScore = 95 - (overallIndex * 0.5); // 降低扣分幅度，讓後面頁面的分數緩慢下降
-					if (paper.cited_by_count > 1000) baseScore += 5;
-					return Math.min(100, Math.max(50, Math.round(baseScore)));
-				}
-
-				function generateCitation(paper) {
+				const generateCitation = (paper) => {
 					let authors = 'Unknown Author';
-					if (paper.authorships && paper.authorships.length > 0) {
-						authors = paper.authorships.map((a:any) => a.author.display_name).join(', ');
+					if (Array.isArray(paper.authorships) && paper.authorships.length > 0) {
+						authors = paper.authorships
+							.slice(0, 5)
+							.map((item) => item.author?.display_name)
+							.filter(Boolean)
+							.join(', ');
+						if (paper.authorships.length > 5) authors += ' et al.';
 					}
+
 					const year = paper.publication_year || 'n.d.';
 					const title = paper.title || 'Untitled';
 					const journal = paper.primary_location?.source?.display_name || '';
 					const doi = paper.doi ? ` ${paper.doi}` : '';
-					return `${authors} (${year}). ${title}. ${journal ? journal + '.' : ''}${doi}`;
-				}
+					return `${authors} (${year}). ${title}. ${journal ? `${journal}.` : ''}${doi}`;
+				};
 
-				// 渲染分頁按鈕的邏輯
-				function renderPagination(totalCount, currentPage) {
-					if (!paginationContainer) return;
-					paginationContainer.innerHTML = '';
-					
+				const generateRecommendations = (paper, index, pageNumber) => {
+					const reasons = [];
+					if (pageNumber === 1 && index < 3 && currentSort.includes('relevance')) {
+						reasons.push('搜尋主題高度相關，適合優先閱讀。');
+					}
+					if ((paper.cited_by_count || 0) > 500) {
+						reasons.push('引用次數高，可能是領域代表或常用背景文獻。');
+					}
+					if ((paper.publication_year || 0) >= 2024) {
+						reasons.push('年份較新，適合掌握近期研究方向。');
+					}
+					if (paper.open_access?.is_oa) {
+						reasons.push('Open Access，可優先取得全文。');
+					}
+					if (reasons.length === 0) reasons.push('符合目前搜尋條件，可作為延伸閱讀候選。');
+					return reasons;
+				};
+
+				const calculateDisplayScore = (paper, overallIndex) => {
+					let score = 94 - overallIndex * 0.45;
+					if ((paper.cited_by_count || 0) > 1000) score += 5;
+					if (paper.open_access?.is_oa) score += 2;
+					return Math.min(100, Math.max(50, Math.round(score)));
+				};
+
+				const renderPagination = (totalCount, currentPage) => {
+					refs.paginationContainer.replaceChildren();
 					if (totalCount === 0) return;
 
-					// 假設一頁 10 筆資料，計算總頁數 (為避免 API 負荷過重，限制最多只能看前 100 頁)
-					const totalPages = Math.ceil(totalCount / 10);
-					const maxAllowedPages = Math.min(totalPages, 100); 
-					const maxVisibleBtns = 5; // 畫面上最多顯示幾個數字按鈕
+					const totalPages = Math.min(Math.ceil(totalCount / 10), 100);
+					const startPage = Math.max(1, currentPage - 2);
+					const endPage = Math.min(totalPages, startPage + 4);
 
-					// 產生 [上一頁] 按鈕
-					const prevBtn = document.createElement('button');
-					prevBtn.className = 'page-btn';
-					prevBtn.textContent = '← 上一頁';
-					prevBtn.disabled = currentPage === 1;
-					prevBtn.addEventListener('click', () => {
-						window.scrollTo({ top: 0, behavior: 'smooth' });
-						searchPapers(currentPage - 1);
-					});
-					paginationContainer.appendChild(prevBtn);
-
-					// 計算數字按鈕的起始與結束範圍
-					let startPage = Math.max(1, currentPage - Math.floor(maxVisibleBtns / 2));
-					let endPage = Math.min(maxAllowedPages, startPage + maxVisibleBtns - 1);
-					
-					if (endPage - startPage + 1 < maxVisibleBtns) {
-						startPage = Math.max(1, endPage - maxVisibleBtns + 1);
-					}
-
-					// 產生數字按鈕
-					for (let i = startPage; i <= endPage; i++) {
-						const pageBtn = document.createElement('button');
-						pageBtn.className = `page-btn ${i === currentPage ? 'active' : ''}`;
-						pageBtn.textContent = i.toString();
-						if (i !== currentPage) {
-							pageBtn.addEventListener('click', () => {
+					const createPageButton = (label, page, disabled = false, active = false) => {
+						const button = document.createElement('button');
+						button.type = 'button';
+						button.className = `page-btn ${active ? 'active' : ''}`;
+						button.textContent = label;
+						button.disabled = disabled;
+						if (!disabled && !active) {
+							button.addEventListener('click', () => {
 								window.scrollTo({ top: 0, behavior: 'smooth' });
-								searchPapers(i);
+								searchPapers(page);
 							});
 						}
-						paginationContainer.appendChild(pageBtn);
+						return button;
+					};
+
+					refs.paginationContainer.append(
+						createPageButton('上一頁', currentPage - 1, currentPage === 1),
+					);
+
+					for (let page = startPage; page <= endPage; page += 1) {
+						refs.paginationContainer.append(
+							createPageButton(String(page), page, false, page === currentPage),
+						);
 					}
 
-					// 產生 [下一頁] 按鈕
-					const nextBtn = document.createElement('button');
-					nextBtn.className = 'page-btn';
-					nextBtn.textContent = '下一頁 →';
-					nextBtn.disabled = currentPage === maxAllowedPages;
-					nextBtn.addEventListener('click', () => {
-						window.scrollTo({ top: 0, behavior: 'smooth' });
-						searchPapers(currentPage + 1);
+					refs.paginationContainer.append(
+						createPageButton('下一頁', currentPage + 1, currentPage === totalPages),
+					);
+				};
+
+				const renderPaperCard = (paper, index, pageNumber) => {
+					const card = document.createElement('article');
+					card.className = 'paper-card';
+
+					const title = paper.title || '無標題';
+					const link = paper.doi || paper.id || '#';
+					const year = paper.publication_year || '未知年份';
+					const citedBy = paper.cited_by_count || 0;
+					const journal = paper.primary_location?.source?.display_name || 'Unknown Journal';
+					const abstractText = reconstructAbstract(paper.abstract_inverted_index);
+					const citationText = generateCitation(paper);
+					const lensHref = `/paper-lens?title=${encodeURIComponent(title)}&citation=${encodeURIComponent(citationText)}`;
+					const score = calculateDisplayScore(paper, (pageNumber - 1) * 10 + index);
+					const reasons = generateRecommendations(paper, index, pageNumber);
+
+					const header = document.createElement('div');
+					header.className = 'card-header';
+
+					const metaTop = document.createElement('div');
+					const titleNode = document.createElement('h3');
+					titleNode.className = 'paper-title';
+					titleNode.textContent = title;
+					const subtitle = document.createElement('p');
+					subtitle.className = 'paper-subtitle';
+					subtitle.textContent = `${year} · ${journal} · Citations: ${citedBy}`;
+					metaTop.append(titleNode, subtitle);
+
+					const scoreNode = document.createElement('div');
+					scoreNode.className = 'score-badge';
+					const scoreNumber = document.createElement('span');
+					scoreNumber.className = 'score-number';
+					scoreNumber.textContent = String(score);
+					const scoreLabel = document.createElement('span');
+					scoreLabel.className = 'score-label';
+					scoreLabel.textContent = 'Score';
+					scoreNode.append(scoreNumber, scoreLabel);
+					header.append(metaTop, scoreNode);
+
+					const pills = document.createElement('div');
+					pills.className = 'pill-row';
+					if (paper.open_access?.is_oa) {
+						const oa = document.createElement('span');
+						oa.className = 'pill pill-dark';
+						oa.textContent = 'Open Access';
+						pills.append(oa);
+					}
+
+					const abstract = document.createElement('p');
+					abstract.className = 'paper-abstract';
+					abstract.textContent = abstractText;
+
+					const list = document.createElement('ul');
+					list.className = 'recommend-list';
+					for (const reason of reasons) {
+						const item = document.createElement('li');
+						item.textContent = reason;
+						list.append(item);
+					}
+
+					const actions = document.createElement('div');
+					actions.className = 'action-btns';
+					const copyButton = document.createElement('button');
+					copyButton.type = 'button';
+					copyButton.className = 'btn-copy';
+					copyButton.textContent = 'Copy Citation';
+					copyButton.addEventListener('click', () => {
+						navigator.clipboard.writeText(citationText);
+						copyButton.textContent = '已複製';
+						window.setTimeout(() => {
+							copyButton.textContent = 'Copy Citation';
+						}, 1600);
 					});
-					paginationContainer.appendChild(nextBtn);
 
-					// 如果總頁數很多，加上一個文字提示
-					if (maxAllowedPages > endPage) {
-						const infoSpan = document.createElement('span');
-						infoSpan.className = 'page-info';
-						infoSpan.textContent = `... 共 ${maxAllowedPages} 頁`;
-						paginationContainer.appendChild(infoSpan);
-					}
-				}
+					const analyzeButton = document.createElement('button');
+					analyzeButton.type = 'button';
+					analyzeButton.className = 'btn-analyze';
+					analyzeButton.textContent = '帶入分析器';
+					analyzeButton.addEventListener('click', () => {
+						refs.paperTitle.value = title;
+						refs.paperCitation.value = citationText;
+						refs.paperText.value = abstractText;
+						analyze();
+						document
+							.querySelector('#analyzerTitle')
+							?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+					});
 
-				// 主要搜尋功能 (現在接收 pageNumber 參數)
-				async function searchPapers(pageNumber = 1) {
-					// 只有在第一頁搜尋時，才去抓取輸入框最新輸入的條件
+					const paperLensLink = document.createElement('a');
+					paperLensLink.className = 'btn-open';
+					paperLensLink.href = lensHref;
+					paperLensLink.textContent = 'Paper Lens';
+
+					const openLink = document.createElement('a');
+					openLink.className = 'btn-open';
+					openLink.href = link;
+					openLink.target = '_blank';
+					openLink.rel = 'noreferrer';
+					openLink.textContent = 'Open Paper';
+					actions.append(copyButton, analyzeButton, paperLensLink, openLink);
+
+					card.append(header);
+					if (pills.childElementCount > 0) card.append(pills);
+					card.append(abstract, list, actions);
+					refs.resultsContainer.append(card);
+				};
+
+				const searchPapers = async (pageNumber = 1) => {
 					if (pageNumber === 1) {
-						// @ts-ignore
-						currentQuery = searchInput.value.trim();
-						// @ts-ignore
-						currentSort = sortSelect.value;
-						// @ts-ignore
-						currentIsOa = oaCheckbox.checked;
+						currentQuery = refs.searchInput.value.trim();
+						currentSort = refs.sortSelect.value;
+						currentIsOa = refs.oaCheckbox.checked;
 					}
 
 					if (!currentQuery) return;
 
-					if(statusMsg) statusMsg.textContent = '搜尋與分析中，請稍候...';
-					if(resultsContainer) resultsContainer.innerHTML = '';
-					if(paginationContainer) paginationContainer.innerHTML = '';
+					setSearchStatus('搜尋中，請稍候。');
+					refs.resultsContainer.replaceChildren();
+					refs.paginationContainer.replaceChildren();
 
 					try {
-						let url = `https://api.openalex.org/works?search=${encodeURIComponent(currentQuery)}&per-page=10&page=${pageNumber}&sort=${currentSort}`;
-						if (currentIsOa) {
-							url += '&filter=is_oa:true';
-						}
+						let url = `https://api.openalex.org/works?search=${encodeURIComponent(
+							currentQuery,
+						)}&per-page=10&page=${pageNumber}&sort=${encodeURIComponent(currentSort)}`;
+						if (currentIsOa) url += '&filter=is_oa:true';
 
 						const response = await fetch(url);
 						const data = await response.json();
+						const results = Array.isArray(data.results) ? data.results : [];
 
-						if (data.results && data.results.length > 0) {
-							// data.meta.count 會回傳符合條件的文獻「總數」
-							const totalResults = data.meta.count;
-							
-							if(statusMsg) {
-								statusMsg.innerHTML = `在 OpenAlex 中為您找到 <b>${totalResults.toLocaleString()}</b> 筆相關文獻（目前顯示第 ${pageNumber} 頁）：`;
-							}
-							
-							data.results.forEach((paper: any, index: number) => {
-								const card = document.createElement('div');
-								card.className = 'paper-card';
-								
-								const title = paper.title || '無標題';
-								const link = paper.doi || paper.id || '#';
-								const year = paper.publication_year || '未知年份';
-								const citedBy = paper.cited_by_count || 0;
-								const journal = paper.primary_location?.source?.display_name || 'Unknown Journal';
-								const isOa = paper.open_access?.is_oa;
-								
-								let authors = '未知作者';
-								if (paper.authorships && paper.authorships.length > 0) {
-									authors = paper.authorships.slice(0, 3).map((a:any) => a.author.display_name).join(', ');
-									if (paper.authorships.length > 3) authors += ' 等人';
-								}
-
-								const abstractText = reconstructAbstract(paper.abstract_inverted_index);
-								const recommendations = generateRecommendations(paper, index, pageNumber);
-								
-								// 解決分頁後分數的問題 (讓不同頁數的分數正確計算)
-								const overallIndex = ((pageNumber - 1) * 10) + index;
-								const displayScore = calculateDisplayScore(paper, overallIndex);
-								// 只有第一頁的前三篇才給五顆星
-								const starDisplay = overallIndex < 3 ? '★★★★★ 優先閱讀' : '★★★★☆ 推薦參考';
-								
-								const citationText = generateCitation(paper);
-								const encodedCitation = encodeURIComponent(citationText);
-								const lensHref = `/paper-lens?title=${encodeURIComponent(title)}&citation=${encodedCitation}`;
-
-								card.innerHTML = `
-									<div class="card-header">
-										<div class="card-meta-top">
-											<span class="stars">${starDisplay}</span>
-											<h2 class="paper-title">${title} ${isOa ? '<span class="oa-badge">Open Access</span>' : ''}</h2>
-											<p class="paper-subtitle">${year} · ${journal} · Citations: ${citedBy} <br><br> ${authors}</p>
-										</div>
-										<div class="score-badge">
-											<span class="score-number">${displayScore}</span>
-											<span class="score-label">Score</span>
-										</div>
-									</div>
-									
-									<p class="paper-abstract">${abstractText}</p>
-									
-									<div class="recommend-box">
-										<h4>推薦原因</h4>
-										<ul>${recommendations}</ul>
-									</div>
-
-									<div class="action-btns">
-										<button class="btn-copy" data-citation="${encodedCitation}">📋 Copy Citation</button>
-										<a href="${lensHref}" class="btn-analyze">Analyze</a>
-										<a href="${link}" target="_blank" class="btn-open">Open Paper</a>
-									</div>
-								`;
-								if(resultsContainer) resultsContainer.appendChild(card);
-							});
-
-							// 渲染底部數字分頁按鈕
-							renderPagination(totalResults, pageNumber);
-
-						} else {
-							if (statusMsg) statusMsg.textContent = '找不到相關文獻，請嘗試更換關鍵字或取消 Open Access 篩選。';
+						if (results.length === 0) {
+							setSearchStatus('找不到相關文獻，請嘗試更換關鍵字或取消 Open Access 篩選。');
+							return;
 						}
+
+						const totalResults = data.meta?.count ?? results.length;
+						setSearchStatus(
+							`找到 ${totalResults.toLocaleString()} 筆相關文獻，目前顯示第 ${pageNumber} 頁。`,
+						);
+
+						results.forEach((paper, index) => renderPaperCard(paper, index, pageNumber));
+						renderPagination(totalResults, pageNumber);
 					} catch (error) {
-						console.error('發生錯誤:', error);
-						if(statusMsg) statusMsg.textContent = '連線至資料庫失敗，請稍後再試。';
+						console.error('Failed to search OpenAlex.', error);
+						setSearchStatus('連線至 OpenAlex 失敗，請稍後再試。');
 					}
-				}
+				};
 
-				// 綁定事件：只有這幾個動作會觸發「回到第一頁重新搜尋」
-				if(searchBtn) searchBtn.addEventListener('click', () => searchPapers(1));
-				if(searchInput) searchInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') searchPapers(1); });
-				if(sortSelect) sortSelect.addEventListener('change', () => {
-					// @ts-ignore
-					if(searchInput.value.trim() !== '') searchPapers(1);
+				refs.searchBtn.addEventListener('click', () => searchPapers(1));
+				refs.searchInput.addEventListener('keydown', (event) => {
+					if (event.key === 'Enter') searchPapers(1);
 				});
-				if(oaCheckbox) oaCheckbox.addEventListener('change', () => {
-					// @ts-ignore
-					if(searchInput.value.trim() !== '') searchPapers(1);
+				refs.sortSelect.addEventListener('change', () => {
+					if (refs.searchInput.value.trim()) searchPapers(1);
+				});
+				refs.oaCheckbox.addEventListener('change', () => {
+					if (refs.searchInput.value.trim()) searchPapers(1);
 				});
 
-				// 綁定複製按鈕事件
-				document.addEventListener('click', (e) => {
-					// @ts-ignore
-					if (e.target && e.target.classList.contains('btn-copy')) {
-						e.preventDefault();
-						// @ts-ignore
-						const citation = decodeURIComponent(e.target.getAttribute('data-citation'));
-						navigator.clipboard.writeText(citation).then(() => {
-							// @ts-ignore
-							const originalText = e.target.textContent;
-							// @ts-ignore
-							e.target.textContent = '✅ 已複製！';
-							// @ts-ignore
-							setTimeout(() => { e.target.textContent = originalText; }, 2000);
-						});
-					}
-				});
+				renderModes();
 			});
 		</script>
 	</body>
