@@ -9,6 +9,9 @@ import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
 <html lang="zh-TW">
 	<head>
 		<BaseHead title={`登入 | ${SITE_TITLE}`} description={SITE_DESCRIPTION} />
+		<script is:inline>
+			document.documentElement.classList.add('auth-checking');
+		</script>
 
 		<style>
 			main {
@@ -176,6 +179,12 @@ import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
 				color: #7a2626;
 			}
 
+			[hidden],
+			html.auth-checking #ownerLoginForm,
+			html.auth-checking #ownerSessionPanel {
+				display: none !important;
+			}
+
 			@media (max-width: 720px) {
 				.login-grid {
 					grid-template-columns: 1fr;
@@ -210,26 +219,52 @@ import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
 						</p>
 					</div>
 					<div class="panel-body">
-						<form class="form-grid" id="ownerLoginForm">
+						<div id="ownerSessionPanel" hidden>
+							<p class="status-text" id="ownerSessionText">
+								已登入本人帳號，登入表單已隱藏。
+							</p>
+							<div class="button-row">
+								<a class="link-button" id="ownerNextLink" href="/dashboard">
+									前往管理頁
+								</a>
+								<button type="button" class="button" data-logout-button>
+									登出
+								</button>
+							</div>
+						</div>
+
+						<form
+							class="form-grid"
+							id="ownerLoginForm"
+							autocomplete="off"
+							data-1p-ignore="true"
+							data-lpignore="true"
+						>
 							<div class="field">
-								<label for="username">帳號</label>
+								<label for="ownerAccountInput">帳號</label>
 								<input
-									id="username"
-									name="username"
+									id="ownerAccountInput"
+									name="ownerAccount"
 									type="text"
-									autocomplete="username"
-									placeholder="kai"
+									autocomplete="off"
+									autocapitalize="none"
+									spellcheck="false"
+									data-1p-ignore="true"
+									data-lpignore="true"
+									placeholder="請輸入帳號"
 									required
 								/>
 							</div>
 
 							<div class="field">
-								<label for="password">密碼</label>
+								<label for="ownerAccessInput">密碼</label>
 								<input
-									id="password"
-									name="password"
+									id="ownerAccessInput"
+									name="ownerAccessKey"
 									type="password"
-									autocomplete="current-password"
+									autocomplete="new-password"
+									data-1p-ignore="true"
+									data-lpignore="true"
 									required
 								/>
 							</div>
@@ -238,7 +273,7 @@ import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
 								<button type="submit" class="button button-primary" id="ownerLoginButton">
 									登入本人帳號
 								</button>
-								<button type="button" class="button" id="logoutButton">
+								<button type="button" class="button" data-logout-button>
 									登出
 								</button>
 							</div>
@@ -273,23 +308,41 @@ import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
 		<script>
 			const refs = {
 				form: document.querySelector('#ownerLoginForm'),
-				username: document.querySelector('#username'),
-				password: document.querySelector('#password'),
+				ownerSessionPanel: document.querySelector('#ownerSessionPanel'),
+				ownerSessionText: document.querySelector('#ownerSessionText'),
+				ownerNextLink: document.querySelector('#ownerNextLink'),
+				username: document.querySelector('#ownerAccountInput'),
+				password: document.querySelector('#ownerAccessInput'),
 				ownerLoginButton: document.querySelector('#ownerLoginButton'),
 				guestLoginButton: document.querySelector('#guestLoginButton'),
-				logoutButton: document.querySelector('#logoutButton'),
+				logoutButtons: document.querySelectorAll('[data-logout-button]'),
 				statusMessage: document.querySelector('#statusMessage'),
 				currentSessionText: document.querySelector('#currentSessionText'),
 			};
 
-			if (Object.values(refs).every(Boolean)) {
+			if (
+				refs.form &&
+				refs.ownerSessionPanel &&
+				refs.ownerSessionText &&
+				refs.ownerNextLink &&
+				refs.username &&
+				refs.password &&
+				refs.ownerLoginButton &&
+				refs.guestLoginButton &&
+				refs.statusMessage &&
+				refs.currentSessionText &&
+				refs.logoutButtons.length > 0
+			) {
 				const {
 					form,
+					ownerSessionPanel,
+					ownerSessionText,
+					ownerNextLink,
 					username,
 					password,
 					ownerLoginButton,
 					guestLoginButton,
-					logoutButton,
+					logoutButtons,
 					statusMessage,
 					currentSessionText,
 				} = refs;
@@ -304,6 +357,34 @@ import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
 					statusMessage.textContent = message;
 					statusMessage.classList.toggle('success', tone === 'success');
 					statusMessage.classList.toggle('error', tone === 'error');
+				};
+
+				const clearOwnerCredentials = () => {
+					username.value = '';
+					password.value = '';
+					username.defaultValue = '';
+					password.defaultValue = '';
+				};
+
+				const showOwnerLoginForm = () => {
+					ownerSessionPanel.hidden = true;
+					form.hidden = false;
+					clearOwnerCredentials();
+					window.setTimeout(clearOwnerCredentials, 50);
+					window.setTimeout(clearOwnerCredentials, 250);
+				};
+
+				const hideOwnerLoginForm = (usernameLabel) => {
+					clearOwnerCredentials();
+					form.hidden = true;
+					ownerSessionPanel.hidden = false;
+					ownerNextLink.href = safeNext;
+					ownerSessionText.textContent =
+						`目前身分：${usernameLabel}（本人）。登入表單已隱藏。`;
+				};
+
+				const finishAuthCheck = () => {
+					document.documentElement.classList.remove('auth-checking');
 				};
 
 				const readError = async (response) => {
@@ -343,19 +424,24 @@ import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
 					const session = await response.json();
 
 					if (session.role === 'owner') {
+						hideOwnerLoginForm(session.username);
 						currentSessionText.textContent = `目前身分：${session.username}（本人）`;
 						setMessage('已登入本人帳號。', 'success');
+						finishAuthCheck();
 						return;
 					}
 
+					showOwnerLoginForm();
 					if (session.role === 'guest') {
 						currentSessionText.textContent = '目前身分：訪客';
 						setMessage('目前以訪客身分登入。');
+						finishAuthCheck();
 						return;
 					}
 
 					currentSessionText.textContent = '目前尚未登入。';
 					setMessage(session.configured ? '目前尚未登入。' : '尚未設定登入用的 Cloudflare secrets。');
+					finishAuthCheck();
 				};
 
 				form.addEventListener('submit', (event) => {
@@ -368,9 +454,11 @@ import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
 						password: password.value,
 					})
 						.then(() => {
+							clearOwnerCredentials();
 							window.location.href = safeNext;
 						})
 						.catch((error) => {
+							clearOwnerCredentials();
 							setMessage(
 								error instanceof Error ? error.message : '登入失敗。',
 								'error',
@@ -388,6 +476,7 @@ import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
 
 					postJson('/api/auth/guest')
 						.then(() => {
+							clearOwnerCredentials();
 							const guestNext = safeNext === '/tasks/admin/' ? '/dashboard' : safeNext;
 							window.location.href = guestNext;
 						})
@@ -403,18 +492,23 @@ import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
 						});
 				});
 
-				logoutButton.addEventListener('click', () => {
-					postJson('/api/auth/logout')
-						.then(updateSession)
-						.catch((error) => {
-							setMessage(
-								error instanceof Error ? error.message : '登出失敗。',
-								'error',
-							);
-						});
+				logoutButtons.forEach((logoutButton) => {
+					logoutButton.addEventListener('click', () => {
+						clearOwnerCredentials();
+						postJson('/api/auth/logout')
+							.then(updateSession)
+							.catch((error) => {
+								setMessage(
+									error instanceof Error ? error.message : '登出失敗。',
+									'error',
+								);
+							});
+					});
 				});
 
 				updateSession().catch(() => {
+					showOwnerLoginForm();
+					finishAuthCheck();
 					setMessage('無法讀取登入狀態。', 'error');
 				});
 			}
