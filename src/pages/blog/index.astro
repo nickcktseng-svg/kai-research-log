@@ -78,6 +78,18 @@ const getTagUrl = (tag: string) => `/tags/${encodeURIComponent(tag)}/`;
 				transform: translateY(-2px);
 			}
 
+			.archive-link-primary {
+				background: #111;
+				border-color: #111;
+				color: #fff;
+			}
+
+			.archive-link-primary:hover {
+				background: #333;
+				border-color: #333;
+				color: #fff;
+			}
+
 			.category-filters {
 				display: flex;
 				flex-wrap: wrap;
@@ -261,6 +273,7 @@ const getTagUrl = (tag: string) => `/tags/${encodeURIComponent(tag)}/`;
 				</p>
 
 				<div class="archive-links">
+					<a href="/journal/admin/" class="archive-link archive-link-primary">撰寫日誌</a>
 					<a href="/categories/" class="archive-link">所有分類</a>
 					<a href="/tags/" class="archive-link">所有標籤</a>
 				</div>
