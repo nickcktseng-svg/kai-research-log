@@ -1553,7 +1553,6 @@ ${bulletList(context.keySentences.slice(0, 5), '目前文字不足，請補上�
 					const abstractText = reconstructAbstract(paper.abstract_inverted_index);
 					const citationText = generateCitation(paper);
 					const paperPayload = buildSearchPaperPayload(paper, abstractText, citationText);
-					const lensHref = `/paper-lens?title=${encodeURIComponent(title)}&citation=${encodeURIComponent(citationText)}`;
 					const score = calculateDisplayScore(paper, (pageNumber - 1) * 10 + index);
 					const reasons = generateRecommendations(paper, index, pageNumber);
 
@@ -1638,18 +1637,13 @@ ${bulletList(context.keySentences.slice(0, 5), '目前文字不足，請補上�
 						savePaperPayload(paperPayload, { button: saveButton });
 					});
 
-					const paperLensLink = document.createElement('a');
-					paperLensLink.className = 'btn-open';
-					paperLensLink.href = lensHref;
-					paperLensLink.textContent = 'Paper Lens';
-
 					const openLink = document.createElement('a');
 					openLink.className = 'btn-open';
 					openLink.href = link;
 					openLink.target = '_blank';
 					openLink.rel = 'noreferrer';
 					openLink.textContent = 'Open Paper';
-					actions.append(copyButton, analyzeButton, saveButton, paperLensLink, openLink);
+					actions.append(copyButton, analyzeButton, saveButton, openLink);
 
 					card.append(header);
 					if (pills.childElementCount > 0) card.append(pills);

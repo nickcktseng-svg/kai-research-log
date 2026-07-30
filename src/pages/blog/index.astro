@@ -45,7 +45,51 @@ const getTagUrl = (tag: string) => `/tags/${encodeURIComponent(tag)}/`;
 			.page-desc {
 				color: #666;
 				font-size: 1.1rem;
-				margin-bottom: 40px;
+				margin-bottom: 24px;
+			}
+
+			.quick-write-panel {
+				display: flex;
+				align-items: center;
+				justify-content: space-between;
+				gap: 20px;
+				margin-bottom: 28px;
+				padding: 22px;
+				border: 1px solid #e5e7eb;
+				border-radius: 8px;
+				background: #fff;
+				box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+			}
+
+			.quick-write-kicker {
+				margin: 0 0 6px;
+				color: #777;
+				font-size: 0.85rem;
+				font-weight: 700;
+			}
+
+			.quick-write-title {
+				margin: 0 0 8px;
+				color: #111;
+				font-size: 1.25rem;
+				font-weight: 800;
+				letter-spacing: 0;
+			}
+
+			.quick-write-desc {
+				max-width: 620px;
+				margin: 0;
+				color: #666;
+				font-size: 0.95rem;
+				line-height: 1.7;
+			}
+
+			.quick-write-actions {
+				display: flex;
+				flex-wrap: wrap;
+				justify-content: flex-end;
+				gap: 10px;
+				flex: 0 0 auto;
 			}
 
 			.archive-links {
@@ -257,6 +301,15 @@ const getTagUrl = (tag: string) => `/tags/${encodeURIComponent(tag)}/`;
 				ul {
 					grid-template-columns: 1fr;
 				}
+
+				.quick-write-panel {
+					align-items: flex-start;
+					flex-direction: column;
+				}
+
+				.quick-write-actions {
+					justify-content: flex-start;
+				}
 			}
 		</style>
 	</head>
@@ -272,8 +325,26 @@ const getTagUrl = (tag: string) => `/tags/${encodeURIComponent(tag)}/`;
 					記錄每一次的學習進度、實作過程與反思。
 				</p>
 
+				<section class="quick-write-panel" aria-labelledby="quickWriteTitle">
+					<div>
+						<p class="quick-write-kicker">本人撰寫入口</p>
+						<h2 id="quickWriteTitle" class="quick-write-title">
+							快速撰寫日誌
+						</h2>
+						<p class="quick-write-desc">
+							使用研究筆記撰寫器建立草稿、發布紀錄，並把圖片直接貼在想放的位置。
+						</p>
+					</div>
+
+					<div class="quick-write-actions">
+						<a href="/journal/admin/" class="archive-link archive-link-primary">
+							開始撰寫
+						</a>
+						<a href="/journal/" class="archive-link">查看研究筆記</a>
+					</div>
+				</section>
+
 				<div class="archive-links">
-					<a href="/journal/admin/" class="archive-link archive-link-primary">撰寫日誌</a>
 					<a href="/categories/" class="archive-link">所有分類</a>
 					<a href="/tags/" class="archive-link">所有標籤</a>
 				</div>
