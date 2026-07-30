@@ -1,20 +1,56 @@
 ---
-import { type CollectionEntry, getCollection, render } from 'astro:content';
+import { getCollection, render } from 'astro:content';
+import { env } from 'cloudflare:workers';
 import BlogPost from '../../layouts/BlogPost.astro';
+import { getBlogEntryBySlug } from '../../lib/database/blog-entries';
+import type { BlogEntry } from '../../types/database';
 
-export async function getStaticPaths() {
-	const posts = await getCollection('blog');
-	return posts.map((post) => ({
-		params: { slug: post.id },
-		props: post,
-	}));
+export const prerender = false;
+
+const slug = Astro.params.slug ?? '';
+const staticPosts = await getCollection('blog', ({ data }) => !data.draft);
+const staticPost = staticPosts.find((post) => post.id === slug);
+
+let databaseEntry: BlogEntry | null = null;
+
+if (!staticPost && slug) {
+	const db = env.DB as D1Database | undefined;
+
+	if (db) {
+		try {
+			databaseEntry = await getBlogEntryBySlug(db, slug, {
+				includeDrafts: false,
+			});
+		} catch (error) {
+			console.error('Failed to load D1 blog entry.', error);
+		}
+	}
 }
-type Props = CollectionEntry<'blog'>;
 
-const post = Astro.props;
-const { Content } = await render(post);
+if (!staticPost && !databaseEntry) {
+	return Astro.redirect('/blog');
+}
+
+const renderedPost = staticPost ? await render(staticPost) : null;
+const Content = renderedPost?.Content;
 ---
 
-<BlogPost {...post.data}>
-	<Content />
-</BlogPost>
+{
+	staticPost && Content ? (
+		<BlogPost {...staticPost.data}>
+			<Content />
+		</BlogPost>
+	) : (
+		databaseEntry && (
+			<BlogPost
+				title={databaseEntry.title}
+				description={databaseEntry.summary}
+				pubDate={new Date(`${databaseEntry.entry_date}T00:00:00`)}
+				category={databaseEntry.category}
+				tags={databaseEntry.tags}
+			>
+				<Fragment set:html={databaseEntry.content_html} />
+			</BlogPost>
+		)
+	)
+}

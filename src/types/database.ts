@@ -124,6 +124,48 @@ export interface UpdateJournalEntryInput {
 	entry_date?: string;
 }
 
+export type BlogEntryStatus = 'draft' | 'published';
+
+export interface DatabaseBlogEntry {
+	id: string;
+	slug: string;
+	title: string;
+	summary: string;
+	category: string;
+	tags_json: string;
+	content_html: string;
+	status: BlogEntryStatus;
+	entry_date: string;
+	created_at: string;
+	updated_at: string;
+}
+
+export interface BlogEntry extends Omit<DatabaseBlogEntry, 'tags_json'> {
+	tags: string[];
+}
+
+export interface CreateBlogEntryInput {
+	title: string;
+	slug: string | null;
+	summary: string;
+	category: string;
+	tags: string[];
+	content_html: string;
+	status: BlogEntryStatus;
+	entry_date: string;
+}
+
+export interface UpdateBlogEntryInput {
+	title?: string;
+	slug?: string | null;
+	summary?: string;
+	category?: string;
+	tags?: string[];
+	content_html?: string;
+	status?: BlogEntryStatus;
+	entry_date?: string;
+}
+
 export type PaperSource = 'manual' | 'openalex' | 'doi' | 'url';
 export type PaperReadingStatus =
 	| 'to_read'

@@ -6,13 +6,65 @@ import Footer from '../../components/Footer.astro';
 import FormattedDate from '../../components/FormattedDate.astro';
 import Header from '../../components/Header.astro';
 import { SITE_DESCRIPTION, SITE_TITLE } from '../../consts';
+import { listBlogEntries } from '../../lib/database/blog-entries';
+import { env } from 'cloudflare:workers';
 
-const posts = (await getCollection('blog', ({ data }) => !data.draft)).sort(
-	(a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf(),
-);
+export const prerender = false;
+
+const staticPosts = await getCollection('blog', ({ data }) => !data.draft);
+
+const loadDatabasePosts = async () => {
+	const db = env.DB as D1Database | undefined;
+	if (!db) return [];
+
+	try {
+		return await listBlogEntries(db, {
+			includeDrafts: false,
+			limit: 100,
+		});
+	} catch (error) {
+		console.error('Failed to load D1 blog entries for blog index.', error);
+		return [];
+	}
+};
+
+type StaticPost = (typeof staticPosts)[number];
+
+type BlogListPost = {
+	id: string;
+	href: string;
+	title: string;
+	description: string;
+	pubDate: Date;
+	category: string;
+	tags: string[];
+	heroImage?: StaticPost['data']['heroImage'];
+};
+
+const posts: BlogListPost[] = [
+	...staticPosts.map((post) => ({
+		id: post.id,
+		href: `/blog/${post.id}/`,
+		title: post.data.title,
+		description: post.data.description,
+		pubDate: post.data.pubDate,
+		category: post.data.category || '未分類',
+		tags: post.data.tags ?? [],
+		heroImage: post.data.heroImage,
+	})),
+	...(await loadDatabasePosts()).map((entry) => ({
+		id: entry.id,
+		href: `/blog/${entry.slug}/`,
+		title: entry.title,
+		description: entry.summary || '這篇日誌尚未填寫摘要。',
+		pubDate: new Date(`${entry.entry_date}T00:00:00`),
+		category: entry.category || '未分類',
+		tags: entry.tags,
+	})),
+].sort((a, b) => b.pubDate.valueOf() - a.pubDate.valueOf());
 
 const categories = Array.from(
-	new Set(posts.map((post) => post.data.category || '未分類')),
+	new Set(posts.map((post) => post.category || '未分類')),
 ).sort((a, b) => a.localeCompare(b, 'zh-Hant'));
 
 const getCategoryUrl = (category: string) =>
@@ -332,15 +384,14 @@ const getTagUrl = (tag: string) => `/tags/${encodeURIComponent(tag)}/`;
 							快速撰寫日誌
 						</h2>
 						<p class="quick-write-desc">
-							使用研究筆記撰寫器建立草稿、發布紀錄，並把圖片直接貼在想放的位置。
+							使用 Blog 專用撰寫器建立草稿、發布日誌，並把圖片直接貼在想放的位置。
 						</p>
 					</div>
 
 					<div class="quick-write-actions">
-						<a href="/journal/admin/" class="archive-link archive-link-primary">
+						<a href="/blog/admin/" class="archive-link archive-link-primary">
 							開始撰寫
 						</a>
-						<a href="/journal/" class="archive-link">查看研究筆記</a>
 					</div>
 				</section>
 
@@ -389,12 +440,12 @@ const getTagUrl = (tag: string) => `/tags/${encodeURIComponent(tag)}/`;
 
 					{
 						posts.map((post) => {
-							const date = post.data.pubDate;
+							const date = post.pubDate;
 							const month = date.getMonth() + 1;
 							const day = date.getDate();
 							const year = date.getFullYear();
-							const category = post.data.category || '未分類';
-							const tags = post.data.tags ?? [];
+							const category = post.category || '未分類';
+							const tags = post.tags ?? [];
 
 							const dateFormats = `
 								${year}-${month.toString().padStart(2, '0')}-${day
@@ -407,8 +458,8 @@ const getTagUrl = (tag: string) => `/tags/${encodeURIComponent(tag)}/`;
 							`;
 
 							const searchData = `
-								${post.data.title}
-								${post.data.description}
+								${post.title}
+								${post.description}
 								${category}
 								${tags.join(' ')}
 								${dateFormats}
@@ -421,22 +472,22 @@ const getTagUrl = (tag: string) => `/tags/${encodeURIComponent(tag)}/`;
 									data-search={searchData}
 									data-category={category}
 								>
-									<a href={`/blog/${post.id}/`} class="post-link">
+									<a href={post.href} class="post-link">
 										{
-											post.data.heroImage && (
+											post.heroImage && (
 												<Image
 													width={720}
 													height={360}
-													src={post.data.heroImage}
-													alt={post.data.title}
+													src={post.heroImage}
+													alt={post.title}
 												/>
 											)
 										}
 
-										<h4 class="title">{post.data.title}</h4>
+										<h4 class="title">{post.title}</h4>
 
 										<p class="date">
-											<FormattedDate date={post.data.pubDate} />
+											<FormattedDate date={post.pubDate} />
 										</p>
 									</a>
 

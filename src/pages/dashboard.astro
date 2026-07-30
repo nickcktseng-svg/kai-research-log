@@ -8,11 +8,13 @@ import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
 import jsonTasks from '../data/tasks.json';
 import jsonReports from '../data/weekly-reports.json';
 import { readAuthSession } from '../lib/auth/session';
+import { listBlogEntries } from '../lib/database/blog-entries';
 import { listJournalEntries } from '../lib/database/journal';
 import { listPapers } from '../lib/database/papers';
 import { listDatabaseTasks } from '../lib/database/tasks';
 import { listDatabaseWeeklyReports } from '../lib/database/weekly-reports';
 import type {
+	BlogEntry,
 	JournalEntry,
 	Paper,
 	TaskPriority,
@@ -115,6 +117,7 @@ const normalizeDatabaseReport = (
 });
 
 const loadDashboardData = async (): Promise<{
+	blogEntries: BlogEntry[];
 	journals: JournalEntry[];
 	papers: Paper[];
 	reports: WeeklyReportView[];
@@ -126,6 +129,7 @@ const loadDashboardData = async (): Promise<{
 
 	if (!db) {
 		return {
+			blogEntries: [],
 			journals: [],
 			papers: [],
 			reports: staticReports,
@@ -134,14 +138,16 @@ const loadDashboardData = async (): Promise<{
 	}
 
 	try {
-		const [databaseTasks, databaseReports, journals, papers] = await Promise.all([
+		const [databaseTasks, databaseReports, blogEntries, journals, papers] = await Promise.all([
 			listDatabaseTasks(db),
 			listDatabaseWeeklyReports(db),
+			listBlogEntries(db, { includeDrafts: false, limit: 3 }),
 			listJournalEntries(db, { includeDrafts: false, limit: 3 }),
 			listPapers(db, { includePrivate: isOwner, limit: 3 }),
 		]);
 
 		return {
+			blogEntries,
 			journals,
 			papers,
 			reports: databaseReports.map(normalizeDatabaseReport),
@@ -150,6 +156,7 @@ const loadDashboardData = async (): Promise<{
 	} catch (error) {
 		console.error('Failed to load D1 dashboard data. Falling back to JSON.', error);
 		return {
+			blogEntries: [],
 			journals: [],
 			papers: [],
 			reports: staticReports,
@@ -158,7 +165,7 @@ const loadDashboardData = async (): Promise<{
 	}
 };
 
-const { journals, papers, reports, tasks } = await loadDashboardData();
+const { blogEntries, journals, papers, reports, tasks } = await loadDashboardData();
 
 const sortTasks = (taskList: TaskView[]) =>
 	[...taskList].sort((a, b) => {
@@ -193,8 +200,26 @@ const latestReport = [...reports].sort((a, b) =>
 const latestJournalEntries = journals.slice(0, 3);
 const latestPapers = papers.slice(0, 3);
 
-const latestPosts = (await getCollection('blog', ({ data }) => !data.draft))
-	.sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf())
+const latestStaticPosts = await getCollection('blog', ({ data }) => !data.draft);
+const latestPosts = [
+	...latestStaticPosts.map((post) => ({
+		title: post.data.title,
+		description: post.data.description,
+		pubDate: post.data.pubDate,
+		category: post.data.category || '未分類',
+		tags: post.data.tags ?? [],
+		href: `/blog/${post.id}/`,
+	})),
+	...blogEntries.map((entry) => ({
+		title: entry.title,
+		description: entry.summary || '這篇日誌尚未填寫摘要。',
+		pubDate: new Date(`${entry.entry_date}T00:00:00`),
+		category: entry.category || '未分類',
+		tags: entry.tags,
+		href: `/blog/${entry.slug}/`,
+	})),
+]
+	.sort((a, b) => b.pubDate.valueOf() - a.pubDate.valueOf())
 	.slice(0, 3);
 
 const quickLinks = [
@@ -220,8 +245,8 @@ const quickLinks = [
 	},
 	{
 		title: '撰寫日誌',
-		description: '本人登入後建立草稿、發布研究筆記與整理圖片紀錄。',
-		href: '/journal/admin/',
+		description: '本人登入後建立草稿、發布 Blog 日誌與整理圖片紀錄。',
+		href: '/blog/admin/',
 	},
 	{
 		title: '文章分類',
@@ -759,8 +784,8 @@ const truncate = (value: string, maxLength: number) =>
 				<div class="post-grid">
 					{
 						latestPosts.map((post) => {
-							const category = post.data.category || '未分類';
-							const tags = post.data.tags ?? [];
+							const category = post.category || '未分類';
+							const tags = post.tags ?? [];
 
 							return (
 								<article class="post-card">
@@ -772,11 +797,11 @@ const truncate = (value: string, maxLength: number) =>
 									</div>
 
 									<h3 class="post-title">
-										<a href={`/blog/${post.id}/`}>{post.data.title}</a>
+										<a href={post.href}>{post.title}</a>
 									</h3>
-									<p class="post-description">{post.data.description}</p>
+									<p class="post-description">{post.description}</p>
 									<p class="post-date">
-										<FormattedDate date={post.data.pubDate} />
+										<FormattedDate date={post.pubDate} />
 									</p>
 								</article>
 							);

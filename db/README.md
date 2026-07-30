@@ -1,6 +1,6 @@
 # Cloudflare D1 設定說明
 
-這個資料夾記錄 D1 基礎架構與資料同步流程。目前 `/tasks`、`/weekly`、`/dashboard`、`/journal` 與 `/papers` 會優先讀取 D1。當 D1 binding 或查詢不可用時，任務會回退到 `src/data/tasks.json`，週報會回退到 `src/data/weekly-reports.json`。
+這個資料夾記錄 D1 基礎架構與資料同步流程。目前 `/tasks`、`/weekly`、`/dashboard`、`/blog`、`/journal` 與 `/papers` 會優先讀取 D1。當 D1 binding 或查詢不可用時，任務會回退到 `src/data/tasks.json`，週報會回退到 `src/data/weekly-reports.json`，Blog 仍會顯示檔案式 content collection 文章。
 
 ## 人工設定步驟
 
@@ -178,7 +178,7 @@ npx wrangler secret put TASK_API_TOKEN
 TASK_API_TOKEN="replace-with-local-test-token"
 ```
 
-前台 `/tasks/admin/` 與 `/journal/admin/` 會優先使用本人登入後的 session cookie 呼叫受保護 API；`TASK_API_TOKEN` 仍保留給 curl、腳本或其他非瀏覽器流程作為備援。
+前台 `/tasks/admin/`、`/blog/admin/` 與 `/journal/admin/` 會優先使用本人登入後的 session cookie 呼叫受保護 API；`TASK_API_TOKEN` 仍保留給 curl、腳本或其他非瀏覽器流程作為備援。
 
 15. 測試受保護任務 API
 
@@ -268,7 +268,37 @@ curl -X PATCH http://localhost:8787/api/admin/journal/<journal-id> \
   }'
 ```
 
-17. 測試受保護文獻庫 API
+17. 測試受保護 Blog 日誌 API
+
+新增 Blog 日誌：
+
+```bash
+curl -X POST http://localhost:8787/api/admin/blog \
+  -H "Authorization: Bearer $TASK_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "測試 Blog 日誌",
+    "summary": "確認 D1 可以儲存並發布學習日誌。",
+    "category": "網站開發",
+    "status": "draft",
+    "entry_date": "2026-07-30",
+    "tags": ["D1", "Blog"],
+    "content_html": "<p>這是一篇測試 Blog 日誌。</p>"
+  }'
+```
+
+發布 Blog 日誌：
+
+```bash
+curl -X PATCH http://localhost:8787/api/admin/blog/<blog-entry-id> \
+  -H "Authorization: Bearer $TASK_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "status": "published"
+  }'
+```
+
+18. 測試受保護文獻庫 API
 
 新增或更新收藏文獻：
 
@@ -322,16 +352,18 @@ curl -X POST http://localhost:8787/api/admin/papers/<paper-id>/analyses \
 
 - `/tasks` 目前優先使用 D1，D1 不可用時回退到 `tasks.json`。
 - `/weekly` 目前會讀 D1 週報，D1 不可用時回退到 `weekly-reports.json`。
-- `/dashboard` 目前會讀 D1 任務、週報與研究筆記，D1 不可用時回退到 JSON。
+- `/dashboard` 目前會讀 D1 任務、週報、Blog 日誌與研究筆記，D1 不可用時回退到 JSON 與檔案式 Blog。
+- `/blog` 會合併顯示檔案式 content collection 文章與 D1 版 Blog 日誌，只有已發布 D1 日誌會公開顯示。
 - `/journal` 是 D1 版研究筆記，只有已發布筆記會公開顯示。
 - `/papers` 是 D1 版文獻庫，本人登入後可以查看私人文獻並編輯閱讀狀態、標籤與筆記；訪客只會看到公開文獻。
 - `/literature` 的文獻分析目前仍是瀏覽器端本地規則式整理，沒有把上傳文件送到外部 AI API。
-- 目前新增的寫入能力只限受保護的任務 API、研究筆記 API 與文獻庫 API，而且必須具備本人登入 session 或 `TASK_API_TOKEN`。
+- 目前新增的寫入能力只限受保護的任務 API、Blog 日誌 API、研究筆記 API 與文獻庫 API，而且必須具備本人登入 session 或 `TASK_API_TOKEN`。
 - `/tasks/admin/` 是本人登入後使用的任務管理頁，目前可新增任務、標記完成與清空任務。
+- `/blog/admin/` 是本人登入後使用的 Blog 日誌撰寫頁，目前可建立草稿、發布日誌，並可貼入小型圖片。
 - `/journal/admin/` 是本人登入後使用的研究筆記撰寫頁，目前可建立草稿、發布筆記，並可貼入小型圖片。
 - `db/seed.sql` 是人工/部署流程使用的資料匯入檔，不是公開寫入 API。
-- Blog content collection 文章仍是檔案式內容，尚未建立 D1 版 Blog frontmatter 編輯器。
-- 圖片目前會以小型 data URL 方式存在研究筆記內容中；大量圖片或大圖建議下一階段改接 Cloudflare R2。
+- 既有 Blog content collection 文章仍保留為檔案式內容；新撰寫的 Blog 日誌會存在 D1 的 `blog_entries`。
+- 圖片目前會以小型 data URL 方式存在 Blog 日誌與研究筆記內容中；大量圖片或大圖建議下一階段改接 Cloudflare R2。
 
 ## 注意事項
 
