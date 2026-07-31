@@ -471,9 +471,15 @@ if (session?.role !== 'owner') {
 							</div>
 
 							<div class="button-row">
-								<button type="submit" class="button button-primary" id="saveButton">
-									儲存日誌
+								<button type="button" class="button" id="saveDraftButton">
+									儲存草稿
 								</button>
+								<button type="submit" class="button button-primary" id="publishButton">
+									發布日誌
+								</button>
+								<a href="/blog" class="action-link" id="viewEntryLink" hidden>
+									查看這篇文章
+								</a>
 								<a href="/blog" class="action-link">查看公開頁</a>
 							</div>
 						</form>
@@ -511,7 +517,9 @@ if (session?.role !== 'owner') {
 				insertImageButton: document.querySelector('#insertImageButton'),
 				newEntryButton: document.querySelector('#newEntryButton'),
 				refreshEntriesButton: document.querySelector('#refreshEntriesButton'),
-				saveButton: document.querySelector('#saveButton'),
+				saveDraftButton: document.querySelector('#saveDraftButton'),
+				publishButton: document.querySelector('#publishButton'),
+				viewEntryLink: document.querySelector('#viewEntryLink'),
 				statusMessage: document.querySelector('#statusMessage'),
 				entryList: document.querySelector('#entryList'),
 				toolbarButtons: document.querySelectorAll('[data-command], [data-block]'),
@@ -532,7 +540,9 @@ if (session?.role !== 'owner') {
 					insertImageButton,
 					newEntryButton,
 					refreshEntriesButton,
-					saveButton,
+					saveDraftButton,
+					publishButton,
+					viewEntryLink,
 					statusMessage,
 					entryList,
 					toolbarButtons,
@@ -609,6 +619,8 @@ if (session?.role !== 'owner') {
 					document
 						.querySelectorAll('[data-entry-id]')
 						.forEach((button) => button.classList.remove('active'));
+					viewEntryLink.hidden = true;
+					viewEntryLink.href = '/blog';
 					setMessage('已建立新的空白日誌。');
 				};
 
@@ -626,6 +638,8 @@ if (session?.role !== 'owner') {
 					document.querySelectorAll('[data-entry-id]').forEach((button) => {
 						button.classList.toggle('active', button.dataset.entryId === entry.id);
 					});
+					viewEntryLink.hidden = entry.status !== 'published';
+					viewEntryLink.href = entry.status === 'published' ? `/blog/${entry.slug}/` : '/blog';
 					setMessage(`正在編輯：${entry.title}`);
 				};
 
@@ -672,7 +686,20 @@ if (session?.role !== 'owner') {
 					setMessage('日誌已更新。', 'success');
 				};
 
-				const saveEntry = async () => {
+				const setSavingState = (isSaving, activeButton, savingText) => {
+					saveDraftButton.disabled = isSaving;
+					publishButton.disabled = isSaving;
+
+					if (isSaving) {
+						activeButton.textContent = savingText;
+						return;
+					}
+
+					saveDraftButton.textContent = '儲存草稿';
+					publishButton.textContent = '發布日誌';
+				};
+
+				const saveEntry = async (targetStatus = status.value) => {
 					const titleValue = title.value.trim();
 					const payload = {
 						title: titleValue,
@@ -681,12 +708,13 @@ if (session?.role !== 'owner') {
 						category: category.value,
 						tags: parseTags(tags.value),
 						entry_date: entryDate.value,
-						status: status.value,
+						status: targetStatus,
 						content_html: editor.innerHTML,
 					};
 
-					saveButton.disabled = true;
-					saveButton.textContent = '儲存中';
+					const isPublishing = targetStatus === 'published';
+					const activeButton = isPublishing ? publishButton : saveDraftButton;
+					setSavingState(true, activeButton, isPublishing ? '發布中' : '儲存中');
 
 					try {
 						const endpoint = activeEntryId
@@ -710,10 +738,13 @@ if (session?.role !== 'owner') {
 
 						loadEntryIntoForm(savedEntry);
 						renderEntries();
-						setMessage('日誌已儲存。', 'success');
+						if (savedEntry.status === 'published') {
+							setMessage('日誌已發布，現在會出現在學習日誌頁。', 'success');
+						} else {
+							setMessage('草稿已儲存；草稿不會顯示在公開學習日誌頁。', 'success');
+						}
 					} finally {
-						saveButton.disabled = false;
-						saveButton.textContent = '儲存日誌';
+						setSavingState(false, activeButton, '');
 					}
 				};
 
@@ -798,9 +829,20 @@ if (session?.role !== 'owner') {
 
 				form.addEventListener('submit', (event) => {
 					event.preventDefault();
-					saveEntry().catch((error) => {
+					status.value = 'published';
+					saveEntry('published').catch((error) => {
 						setMessage(
-							error instanceof Error ? error.message : '日誌儲存失敗。',
+							error instanceof Error ? error.message : '日誌發布失敗。',
+							'error',
+						);
+					});
+				});
+
+				saveDraftButton.addEventListener('click', () => {
+					status.value = 'draft';
+					saveEntry('draft').catch((error) => {
+						setMessage(
+							error instanceof Error ? error.message : '草稿儲存失敗。',
 							'error',
 						);
 					});
