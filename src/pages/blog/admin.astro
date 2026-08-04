@@ -386,7 +386,7 @@ if (session?.role !== 'owner') {
 					<div class="panel-header">
 						<h2 class="panel-title" id="editorTitle">日誌內容</h2>
 						<p class="panel-desc">
-							可先儲存草稿；選擇發布後會出現在學習日誌頁。
+							可先儲存草稿；發布成功後會自動前往公開文章頁。
 						</p>
 					</div>
 					<div class="panel-body">
@@ -578,6 +578,8 @@ if (session?.role !== 'owner') {
 						.replace(/^-+|-+$/g, '')
 						.slice(0, 90);
 
+				const getEntryUrl = (entry) => `/blog/${encodeURIComponent(entry.slug)}/`;
+
 				const readError = async (response) => {
 					try {
 						const body = await response.json();
@@ -639,7 +641,7 @@ if (session?.role !== 'owner') {
 						button.classList.toggle('active', button.dataset.entryId === entry.id);
 					});
 					viewEntryLink.hidden = entry.status !== 'published';
-					viewEntryLink.href = entry.status === 'published' ? `/blog/${entry.slug}/` : '/blog';
+					viewEntryLink.href = entry.status === 'published' ? getEntryUrl(entry) : '/blog';
 					setMessage(`正在編輯：${entry.title}`);
 				};
 
@@ -739,7 +741,11 @@ if (session?.role !== 'owner') {
 						loadEntryIntoForm(savedEntry);
 						renderEntries();
 						if (savedEntry.status === 'published') {
-							setMessage('日誌已發布，現在會出現在學習日誌頁。', 'success');
+							const entryUrl = getEntryUrl(savedEntry);
+							setMessage('日誌已發布，正在前往公開文章頁。', 'success');
+							window.setTimeout(() => {
+								window.location.href = entryUrl;
+							}, 450);
 						} else {
 							setMessage('草稿已儲存；草稿不會顯示在公開學習日誌頁。', 'success');
 						}
