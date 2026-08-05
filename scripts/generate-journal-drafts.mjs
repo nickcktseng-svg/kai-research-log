@@ -1,15 +1,14 @@
+import { existsSync, readFileSync, renameSync } from 'node:fs';
+import { basename, join, resolve } from 'node:path';
 import {
-	existsSync,
-	renameSync,
-	writeFileSync,
-} from 'node:fs';
-import { basename, join } from 'node:path';
-import {
+	assertInsidePath,
 	boolValue,
 	ensureDir,
 	escapeYamlString,
+	getDatePart,
 	getIsoWeek,
 	markdownToDescription,
+	parseFrontmatter,
 	paths,
 	printValidationReport,
 	readJsonArray,
@@ -20,6 +19,7 @@ import {
 	uniqueStrings,
 	validateInbox,
 	writeJsonArray,
+	writeTextFileAtomic,
 } from './journal-pipeline-utils.mjs';
 
 const dryRun = process.argv.includes('--dry-run');
@@ -77,24 +77,122 @@ const addSection = (parts, title, content) => {
 	parts.push(`${title}\n\n${trimmed}`);
 };
 
-const uniqueOutputPath = (directory, fileName) => {
+const splitFileName = (fileName) => {
 	const extensionIndex = fileName.lastIndexOf('.');
-	const base = extensionIndex === -1 ? fileName : fileName.slice(0, extensionIndex);
-	const extension = extensionIndex === -1 ? '' : fileName.slice(extensionIndex);
-	let candidate = join(directory, fileName);
-	let suffix = 2;
-
-	while (existsSync(candidate)) {
-		candidate = join(directory, `${base}-${suffix}${extension}`);
-		suffix += 1;
-	}
-
-	return candidate;
+	return {
+		base: extensionIndex === -1 ? fileName : fileName.slice(0, extensionIndex),
+		extension: extensionIndex === -1 ? '' : fileName.slice(extensionIndex),
+	};
 };
 
-const buildJournalDraft = (entry) => {
+const makeFileName = (base, extension, suffix = '') => {
+	const safeBase = slugify(`${base}${suffix}`, 'conversation').slice(0, 96);
+	return `${safeBase}${extension || '.md'}`;
+};
+
+const existingDraftHasConversationId = (filePath, conversationId) => {
+	if (!existsSync(filePath)) return false;
+
+	try {
+		const parsed = parseFrontmatter(readFileSync(filePath, 'utf8'));
+		return (
+			Array.isArray(parsed.data.sourceConversationIds) &&
+			parsed.data.sourceConversationIds.includes(conversationId)
+		);
+	} catch {
+		return false;
+	}
+};
+
+const reserveOutputPath = ({
+	contentHash,
+	directory,
+	fileName,
+	reservedPaths,
+	sourceConversationId,
+}) => {
+	const { base, extension } = splitFileName(fileName);
+	const idSlug = slugify(sourceConversationId, 'conversation').slice(0, 36);
+	const hashSlug = contentHash.slice(0, 10);
+	const candidates = [
+		makeFileName(base, extension),
+		makeFileName(base, extension, `-${idSlug}`),
+		makeFileName(base, extension, `-${hashSlug}`),
+	];
+
+	for (const candidateName of candidates) {
+		const candidatePath = resolve(directory, candidateName);
+		assertInsidePath(candidatePath, directory, 'generated file');
+		const key = candidatePath;
+
+		if (reservedPaths.has(key)) continue;
+		if (!existsSync(candidatePath)) {
+			reservedPaths.add(key);
+			return { existsForSameSource: false, outputPath: candidatePath };
+		}
+		if (existingDraftHasConversationId(candidatePath, sourceConversationId)) {
+			reservedPaths.add(key);
+			return { existsForSameSource: true, outputPath: candidatePath };
+		}
+	}
+
+	for (let suffix = 2; suffix < 1000; suffix++) {
+		const candidateName = makeFileName(base, extension, `-${hashSlug}-${suffix}`);
+		const candidatePath = resolve(directory, candidateName);
+		assertInsidePath(candidatePath, directory, 'generated file');
+		const key = candidatePath;
+
+		if (reservedPaths.has(key)) continue;
+		if (!existsSync(candidatePath)) {
+			reservedPaths.add(key);
+			return { existsForSameSource: false, outputPath: candidatePath };
+		}
+		if (existingDraftHasConversationId(candidatePath, sourceConversationId)) {
+			reservedPaths.add(key);
+			return { existsForSameSource: true, outputPath: candidatePath };
+		}
+	}
+
+	throw new Error(`Unable to reserve a safe output path for ${sourceConversationId}.`);
+};
+
+const reserveProcessedPath = (entry, reservedPaths) => {
+	const originalName = basename(entry.filePath).replace(/[\\/]+/g, '-');
+	const { base, extension } = splitFileName(originalName);
+	const idSlug = slugify(entry.frontmatter.id, 'conversation').slice(0, 36);
+	const candidates = [
+		makeFileName(base, extension),
+		makeFileName(base, extension, `-${idSlug}`),
+		makeFileName(base, extension, `-${entry.contentHash.slice(0, 10)}`),
+	];
+
+	for (const candidateName of candidates) {
+		const candidatePath = resolve(paths.processed, candidateName);
+		assertInsidePath(candidatePath, paths.processed, 'processed file');
+		if (reservedPaths.has(candidatePath) || existsSync(candidatePath)) continue;
+
+		reservedPaths.add(candidatePath);
+		return candidatePath;
+	}
+
+	for (let suffix = 2; suffix < 1000; suffix++) {
+		const candidatePath = resolve(
+			paths.processed,
+			makeFileName(base, extension, `-${entry.contentHash.slice(0, 10)}-${suffix}`),
+		);
+		assertInsidePath(candidatePath, paths.processed, 'processed file');
+		if (reservedPaths.has(candidatePath) || existsSync(candidatePath)) continue;
+
+		reservedPaths.add(candidatePath);
+		return candidatePath;
+	}
+
+	throw new Error(`Unable to reserve a processed path for ${entry.relativePath}.`);
+};
+
+const buildJournalDraft = (entry, reservedPaths) => {
 	const { frontmatter, sections } = entry;
-	const date = String(frontmatter.createdAt).slice(0, 10);
+	const date = getDatePart(frontmatter.createdAt);
 	const dateSlug = date.replaceAll('-', '');
 	const topics = normalizeTopics(frontmatter.topics);
 	const category = classifyCategory(topics);
@@ -104,7 +202,13 @@ const buildJournalDraft = (entry) => {
 	const description = markdownToDescription(sections.get('對話摘要') || '');
 	const slug = slugify(title, slugify(frontmatter.id, 'conversation'));
 	const fileName = `${dateSlug}-${slug}.md`;
-	const outputPath = uniqueOutputPath(paths.blogGenerated, fileName);
+	const reservedPath = reserveOutputPath({
+		contentHash: entry.contentHash,
+		directory: paths.blogGenerated,
+		fileName,
+		reservedPaths,
+		sourceConversationId: frontmatter.id,
+	});
 
 	const bodyParts = [
 		[
@@ -155,8 +259,9 @@ const buildJournalDraft = (entry) => {
 		category,
 		content: `${frontmatterText}\n\n${bodyParts.join('\n\n')}\n`,
 		description,
-		outputPath,
-		relativeOutputPath: toRelativePath(outputPath),
+		existsForSameSource: reservedPath.existsForSameSource,
+		outputPath: reservedPath.outputPath,
+		relativeOutputPath: toRelativePath(reservedPath.outputPath),
 		title,
 	};
 };
@@ -228,21 +333,24 @@ const mergeWeeklyDraft = (drafts, entry, generatedAt) => {
 	return week;
 };
 
-const uniqueProcessedPath = (sourcePath) => {
-	const originalName = basename(sourcePath);
-	const extensionIndex = originalName.lastIndexOf('.');
-	const base =
-		extensionIndex === -1 ? originalName : originalName.slice(0, extensionIndex);
-	const extension = extensionIndex === -1 ? '' : originalName.slice(extensionIndex);
-	let candidate = join(paths.processed, originalName);
-	let suffix = 2;
-
-	while (existsSync(candidate)) {
-		candidate = join(paths.processed, `${base}-${suffix}${extension}`);
-		suffix += 1;
+const printActions = (actions) => {
+	for (const action of actions) {
+		if (action.type === 'skip-private') {
+			console.log(`[skip] ${action.file}: 已跳過 private。`);
+		}
+		if (action.type === 'skip-processed') {
+			console.log(`[skip] ${action.file}: 已處理過的 id 或 content hash。`);
+		}
+		if (action.type === 'skip-existing-journal') {
+			console.log(`[skip] ${action.file}: 已存在相同 conversation id 的 Blog 草稿。`);
+		}
+		if (action.type === 'journal') {
+			console.log(`[journal] ${action.file} -> ${action.output}`);
+		}
+		if (action.type === 'weekly') {
+			console.log(`[weekly] ${action.file} -> ${action.week}`);
+		}
 	}
-
-	return candidate;
 };
 
 const result = validateInbox();
@@ -265,111 +373,153 @@ try {
 }
 
 const generatedAt = new Date().toISOString();
+const originalProcessedRecords = [...result.processedRecords];
 const processedRecords = [...result.processedRecords];
 const actions = [];
 const seenProcessedHashes = new Set(result.processedHashes);
 const seenProcessedIds = new Set(result.processedIds);
+const reservedBlogPaths = new Set();
+const reservedProcessedPaths = new Set();
+const plans = [];
 let weeklyDraftsChanged = false;
 
-for (const entry of result.entries) {
-	const { frontmatter } = entry;
+try {
+	for (const entry of result.entries) {
+		const { frontmatter } = entry;
 
-	if (frontmatter.privacy === 'private') {
-		actions.push({
-			file: entry.relativePath,
-			reason: 'privacy is private',
-			type: 'skip',
-		});
-		continue;
-	}
-
-	if (
-		seenProcessedIds.has(frontmatter.id) ||
-		seenProcessedHashes.has(entry.contentHash)
-	) {
-		actions.push({
-			file: entry.relativePath,
-			reason: 'already processed id or content hash',
-			type: 'skip',
-		});
-		continue;
-	}
-
-	let journalDraft = null;
-	let weeklyDraftWeek = null;
-
-	if (boolValue(frontmatter.createJournal, true)) {
-		const draft = buildJournalDraft(entry);
-		journalDraft = draft.relativeOutputPath;
-		actions.push({
-			file: entry.relativePath,
-			output: journalDraft,
-			title: draft.title,
-			type: 'journal',
-		});
-
-		if (!dryRun) {
-			ensureDir(paths.blogGenerated);
-			writeFileSync(draft.outputPath, draft.content);
+		if (frontmatter.privacy === 'private') {
+			actions.push({
+				file: entry.relativePath,
+				type: 'skip-private',
+			});
+			continue;
 		}
-	}
 
-	if (boolValue(frontmatter.updateWeekly, true)) {
-		weeklyDraftWeek = mergeWeeklyDraft(weeklyDrafts, entry, generatedAt);
-		weeklyDraftsChanged = true;
-		actions.push({
-			file: entry.relativePath,
-			type: 'weekly',
-			week: weeklyDraftWeek,
+		if (
+			seenProcessedIds.has(frontmatter.id) ||
+			seenProcessedHashes.has(entry.contentHash)
+		) {
+			actions.push({
+				file: entry.relativePath,
+				type: 'skip-processed',
+			});
+			continue;
+		}
+
+		let journalDraft = null;
+		let weeklyDraftWeek = null;
+		let journalWrite = null;
+
+		if (boolValue(frontmatter.createJournal, true)) {
+			const draft = buildJournalDraft(entry, reservedBlogPaths);
+			journalDraft = draft.relativeOutputPath;
+
+			if (draft.existsForSameSource) {
+				actions.push({
+					file: entry.relativePath,
+					output: journalDraft,
+					type: 'skip-existing-journal',
+				});
+			} else {
+				journalWrite = draft;
+				actions.push({
+					file: entry.relativePath,
+					output: journalDraft,
+					title: draft.title,
+					type: 'journal',
+				});
+			}
+		}
+
+		if (boolValue(frontmatter.updateWeekly, true)) {
+			weeklyDraftWeek = mergeWeeklyDraft(weeklyDrafts, entry, generatedAt);
+			weeklyDraftsChanged = true;
+			actions.push({
+				file: entry.relativePath,
+				type: 'weekly',
+				week: weeklyDraftWeek,
+			});
+		}
+
+		const processedPath = reserveProcessedPath(entry, reservedProcessedPaths);
+		plans.push({
+			entry,
+			journalWrite,
+			processedPath,
+			processedRecord: {
+				id: frontmatter.id,
+				sourceFile: toRelativePath(processedPath),
+				contentHash: entry.contentHash,
+				processedAt: generatedAt,
+				journalDraft,
+				weeklyDraftWeek,
+			},
 		});
+
+		seenProcessedIds.add(frontmatter.id);
+		seenProcessedHashes.add(entry.contentHash);
 	}
-
-	if (!dryRun) {
-		ensureDir(paths.processed);
-		const processedPath = uniqueProcessedPath(entry.filePath);
-		renameSync(entry.filePath, processedPath);
-		processedRecords.push({
-			id: frontmatter.id,
-			sourceFile: toRelativePath(processedPath),
-			contentHash: entry.contentHash,
-			processedAt: generatedAt,
-			journalDraft,
-			weeklyDraftWeek,
-		});
-	}
-
-	seenProcessedIds.add(frontmatter.id);
-	seenProcessedHashes.add(entry.contentHash);
+} catch (error) {
+	console.error(`[error] failed to prepare journal pipeline output: ${
+		error instanceof Error ? error.message : String(error)
+	}`);
+	process.exit(1);
 }
 
-if (!dryRun && weeklyDraftsChanged) {
-	ensureDir(join(rootDir, 'src/data'));
-	writeJsonArray(
-		paths.weeklyDrafts,
-		weeklyDrafts.sort((a, b) => a.week.localeCompare(b.week)),
-	);
-}
-
-if (!dryRun) {
-	writeJsonArray(paths.processedJson, processedRecords);
-}
+printActions(actions);
 
 if (dryRun) {
 	console.log('Dry run only. No files were written or moved.');
+	process.exit(0);
 }
 
-if (actions.length === 0) {
-	console.log('No journal inbox entries to process.');
-} else {
-	for (const action of actions) {
-		if (action.type === 'skip') {
-			console.log(`[skip] ${action.file}: ${action.reason}`);
-		}
-		if (action.type === 'journal') {
-			console.log(`[journal] ${action.file} -> ${action.output}`);
-		}
-		if (action.type === 'weekly') {
-			console.log(`[weekly] ${action.file} -> ${action.week}`);
-		}
+try {
+	if (plans.some((plan) => plan.journalWrite)) {
+		ensureDir(paths.blogGenerated);
 	}
+	if (weeklyDraftsChanged) {
+		ensureDir(join(rootDir, 'src/data'));
+	}
+	if (plans.length > 0) {
+		ensureDir(paths.processed);
+	}
+
+	for (const plan of plans) {
+		if (!plan.journalWrite) continue;
+		if (existsSync(plan.journalWrite.outputPath)) {
+			throw new Error(
+				`refusing to overwrite existing Blog draft: ${plan.journalWrite.relativeOutputPath}`,
+			);
+		}
+		assertInsidePath(plan.journalWrite.outputPath, paths.blogGenerated, 'Blog draft');
+		writeTextFileAtomic(plan.journalWrite.outputPath, plan.journalWrite.content);
+	}
+
+	if (weeklyDraftsChanged) {
+		writeJsonArray(
+			paths.weeklyDrafts,
+			weeklyDrafts.sort((a, b) => a.week.localeCompare(b.week)),
+		);
+	}
+
+	processedRecords.push(...plans.map((plan) => plan.processedRecord));
+	writeJsonArray(paths.processedJson, processedRecords);
+
+	for (const plan of plans) {
+		assertInsidePath(plan.entry.filePath, paths.pending, 'pending source');
+		assertInsidePath(plan.processedPath, paths.processed, 'processed source');
+		renameSync(plan.entry.filePath, plan.processedPath);
+	}
+} catch (error) {
+	console.error(`[error] failed to write journal pipeline output: ${
+		error instanceof Error ? error.message : String(error)
+	}`);
+
+	try {
+		writeJsonArray(paths.processedJson, originalProcessedRecords);
+	} catch {
+		console.error('[error] failed to restore previous processed.json after write failure.');
+	}
+
+	process.exit(1);
 }

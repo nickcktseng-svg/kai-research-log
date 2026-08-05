@@ -4,11 +4,14 @@ import {
 	mkdirSync,
 	readFileSync,
 	readdirSync,
+	renameSync,
 	statSync,
+	unlinkSync,
 	writeFileSync,
 } from 'node:fs';
-import { dirname, join, relative, resolve } from 'node:path';
+import { dirname, isAbsolute, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import yaml from 'js-yaml';
 
 export const rootDir = process.env.JOURNAL_PIPELINE_ROOT
 	? resolve(process.env.JOURNAL_PIPELINE_ROOT)
@@ -44,17 +47,48 @@ export const requiredSections = [
 
 const sensitivePatterns = [
 	{ type: 'private-key', pattern: /BEGIN [A-Z ]*PRIVATE KEY/i },
+	{ type: 'github-token', pattern: /\bgh[pousr]_[A-Za-z0-9_]{20,}\b/ },
 	{ type: 'api-key-keyword', pattern: /\bAPI[\s_-]*key\b/i },
+	{ type: 'bearer-token', pattern: /\bBearer\s+[A-Za-z0-9._~+/=-]{12,}\b/i },
 	{ type: 'bearer-token-keyword', pattern: /\bBearer\s+token\b/i },
+	{ type: 'password-assignment', pattern: /\bpassword\s*[:=]\s*\S+/i },
 	{ type: 'password-keyword', pattern: /\bpassword\b/i },
+	{ type: 'secret-assignment', pattern: /\bsecret\s*[:=]\s*\S+/i },
 	{ type: 'secret-keyword', pattern: /\bsecret\b/i },
 	{ type: 'github-token-keyword', pattern: /\bGitHub\s+token\b/i },
 	{ type: 'cloudflare-token-keyword', pattern: /\bCloudflare\s+token\b/i },
+	{ type: 'cloudflare-api-token-variable', pattern: /\bCLOUDFLARE_API_TOKEN\b/ },
 	{ type: 'openai-api-key-variable', pattern: /\bOPENAI_API_KEY\b/ },
 	{ type: 'ssh-private-key-variable', pattern: /\bSSH_PRIVATE_KEY\b/ },
 ];
 
-export const toRelativePath = (path) => relative(rootDir, path).replaceAll('\\', '/');
+const isoTimestampPattern =
+	/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?(?:Z|[+-]\d{2}:\d{2})$/;
+
+export const isInsidePath = (targetPath, directory) => {
+	const relativePath = relative(resolve(directory), resolve(targetPath));
+	return (
+		relativePath === '' ||
+		(Boolean(relativePath) &&
+			!relativePath.startsWith('..') &&
+			!isAbsolute(relativePath))
+	);
+};
+
+export const assertInsidePath = (targetPath, directory, label = 'path') => {
+	if (!isInsidePath(targetPath, directory)) {
+		throw new Error(`${label} must stay inside ${toRelativePath(directory)}.`);
+	}
+};
+
+export const toRelativePath = (targetPath) => {
+	const resolvedPath = resolve(targetPath);
+	if (!isInsidePath(resolvedPath, rootDir)) {
+		throw new Error('path must stay inside the journal pipeline root.');
+	}
+
+	return relative(rootDir, resolvedPath).replaceAll('\\', '/');
+};
 
 export const ensureDir = (path) => {
 	if (!existsSync(path)) mkdirSync(path, { recursive: true });
@@ -71,37 +105,30 @@ export const readJsonArray = (path, label) => {
 	return parsed;
 };
 
+const writeAtomic = (path, content) => {
+	ensureDir(dirname(path));
+	const tempPath = `${path}.${process.pid}.${Date.now()}.tmp`;
+
+	try {
+		writeFileSync(tempPath, content, { flag: 'wx' });
+		renameSync(tempPath, path);
+	} catch (error) {
+		if (existsSync(tempPath)) unlinkSync(tempPath);
+		throw error;
+	}
+};
+
+export const writeTextFileAtomic = (path, content) => {
+	writeAtomic(path, content);
+};
+
 export const writeJsonArray = (path, value) => {
-	writeFileSync(path, `${JSON.stringify(value, null, 2)}\n`);
+	writeAtomic(path, `${JSON.stringify(value, null, 2)}\n`);
 };
 
-const parseScalar = (value) => {
-	const trimmed = value.trim();
-
-	if (trimmed === '[]') return [];
-	if (trimmed === 'true') return true;
-	if (trimmed === 'false') return false;
-	if (
-		(trimmed.startsWith('"') && trimmed.endsWith('"')) ||
-		(trimmed.startsWith("'") && trimmed.endsWith("'"))
-	) {
-		return trimmed.slice(1, -1);
-	}
-	if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
-		const inside = trimmed.slice(1, -1).trim();
-		if (!inside) return [];
-
-		return inside
-			.split(',')
-			.map((item) => parseScalar(item))
-			.filter((item) => typeof item === 'string' && item.trim().length > 0);
-	}
-
-	return trimmed;
-};
-
-export const parseFrontmatter = (content) => {
-	const lines = content.split(/\r?\n/);
+const parseFrontmatterBlock = (content) => {
+	const normalizedContent = content.replace(/^\uFEFF/, '');
+	const lines = normalizedContent.split(/\r?\n/);
 	if (lines[0]?.trim() !== '---') {
 		throw new Error('missing frontmatter block');
 	}
@@ -113,39 +140,34 @@ export const parseFrontmatter = (content) => {
 		throw new Error('unterminated frontmatter block');
 	}
 
-	const frontmatterLines = lines.slice(1, endIndex);
-	const data = {};
-
-	for (let index = 0; index < frontmatterLines.length; index++) {
-		const line = frontmatterLines[index];
-		if (!line.trim() || line.trim().startsWith('#')) continue;
-
-		const match = line.match(/^([A-Za-z][A-Za-z0-9_-]*):(?:\s*(.*))?$/);
-		if (!match) continue;
-
-		const [, key, rawValue = ''] = match;
-		if (rawValue.trim() === '') {
-			const blockItems = [];
-			while (index + 1 < frontmatterLines.length) {
-				const nextLine = frontmatterLines[index + 1];
-				const itemMatch = nextLine.match(/^\s*-\s*(.*)$/);
-				if (!itemMatch) break;
-
-				blockItems.push(parseScalar(itemMatch[1]));
-				index++;
-			}
-
-			data[key] = blockItems;
-			continue;
-		}
-
-		data[key] = parseScalar(rawValue);
-	}
-
 	return {
 		body: lines.slice(endIndex + 1).join('\n'),
-		data,
+		frontmatterText: lines.slice(1, endIndex).join('\n'),
 	};
+};
+
+const isPlainObject = (value) =>
+	value !== null && typeof value === 'object' && !Array.isArray(value);
+
+export const parseFrontmatter = (content) => {
+	const { body, frontmatterText } = parseFrontmatterBlock(content);
+	let data;
+
+	try {
+		data = yaml.load(frontmatterText, { schema: yaml.FAILSAFE_SCHEMA }) ?? {};
+	} catch (error) {
+		throw new Error(
+			`invalid frontmatter YAML: ${
+				error instanceof Error ? error.message : String(error)
+			}`,
+		);
+	}
+
+	if (!isPlainObject(data)) {
+		throw new Error('frontmatter must be a YAML mapping');
+	}
+
+	return { body, data };
 };
 
 export const extractSections = (body) => {
@@ -186,7 +208,8 @@ export const splitSectionItems = (content) =>
 		)
 		.filter(Boolean);
 
-export const uniqueStrings = (items) => Array.from(new Set(items.filter(Boolean)));
+export const uniqueStrings = (items) =>
+	Array.from(new Set(items.map((item) => String(item).trim()).filter(Boolean)));
 
 export const sha256 = (content) =>
 	createHash('sha256').update(content, 'utf8').digest('hex');
@@ -196,15 +219,33 @@ export const listPendingFiles = () => {
 
 	return readdirSync(paths.pending)
 		.filter((file) => file.endsWith('.md'))
-		.map((file) => join(paths.pending, file))
+		.map((file) => {
+			const filePath = join(paths.pending, file);
+			assertInsidePath(filePath, paths.pending, 'pending file');
+			return filePath;
+		})
 		.filter((path) => statSync(path).isFile())
 		.sort((a, b) => a.localeCompare(b));
 };
 
-const checkSensitiveContent = (content) =>
+export const checkSensitiveContent = (content) =>
 	sensitivePatterns
 		.filter(({ pattern }) => pattern.test(content))
 		.map(({ type }) => type);
+
+const validateRelativePath = (value, index, field) => {
+	const errors = [];
+	if (value === null || value === undefined) return errors;
+	if (typeof value !== 'string') {
+		errors.push(`processed.json entry ${index} ${field} must be a string or null.`);
+		return errors;
+	}
+	if (isAbsolute(value) || value.includes('..') || value.includes('\\')) {
+		errors.push(`processed.json entry ${index} ${field} must be a repository-relative path.`);
+	}
+
+	return errors;
+};
 
 const validateRecordShape = (record, index) => {
 	const errors = [];
@@ -212,12 +253,52 @@ const validateRecordShape = (record, index) => {
 		errors.push(`processed.json entry ${index} must be an object.`);
 		return errors;
 	}
-	if (!record.id) errors.push(`processed.json entry ${index} is missing id.`);
-	if (!record.contentHash) {
+	if (!record.id || typeof record.id !== 'string') {
+		errors.push(`processed.json entry ${index} is missing id.`);
+	}
+	if (!record.contentHash || typeof record.contentHash !== 'string') {
 		errors.push(`processed.json entry ${index} is missing contentHash.`);
+	}
+	if (!record.sourceFile || typeof record.sourceFile !== 'string') {
+		errors.push(`processed.json entry ${index} is missing sourceFile.`);
+	}
+	if (!record.processedAt || typeof record.processedAt !== 'string') {
+		errors.push(`processed.json entry ${index} is missing processedAt.`);
+	} else if (
+		!isoTimestampPattern.test(record.processedAt) ||
+		Number.isNaN(Date.parse(record.processedAt))
+	) {
+		errors.push(`processed.json entry ${index} processedAt must be an ISO timestamp.`);
+	}
+	errors.push(...validateRelativePath(record.sourceFile, index, 'sourceFile'));
+	errors.push(...validateRelativePath(record.journalDraft, index, 'journalDraft'));
+	if (
+		record.journalDraft &&
+		!String(record.journalDraft).startsWith('src/content/blog/generated/')
+	) {
+		errors.push(`processed.json entry ${index} journalDraft must point to generated blog content.`);
+	}
+	if (
+		record.weeklyDraftWeek !== null &&
+		record.weeklyDraftWeek !== undefined &&
+		(typeof record.weeklyDraftWeek !== 'string' ||
+			!/^\d{4}-W\d{2}$/.test(record.weeklyDraftWeek))
+	) {
+		errors.push(`processed.json entry ${index} weeklyDraftWeek must use YYYY-Www.`);
 	}
 
 	return errors;
+};
+
+const valueIsMissing = (value) =>
+	value === undefined || value === null || String(value).trim() === '';
+
+const validateBooleanLike = (value, key) => {
+	if (value === undefined) return null;
+	if (value === true || value === false) return null;
+	if (value === 'true' || value === 'false') return null;
+
+	return `${key} must be true or false`;
 };
 
 export const validateInbox = () => {
@@ -227,11 +308,42 @@ export const validateInbox = () => {
 
 	try {
 		processedRecords = readJsonArray(paths.processedJson, 'processed.json');
+		const processedIdMap = new Map();
+		const processedHashMap = new Map();
+
 		processedRecords.forEach((record, index) => {
 			for (const error of validateRecordShape(record, index)) {
 				errors.push({ file: 'journal-inbox/processed.json', message: error });
 			}
+
+			if (record?.id) {
+				const indexes = processedIdMap.get(record.id) ?? [];
+				indexes.push(index);
+				processedIdMap.set(record.id, indexes);
+			}
+			if (record?.contentHash) {
+				const indexes = processedHashMap.get(record.contentHash) ?? [];
+				indexes.push(index);
+				processedHashMap.set(record.contentHash, indexes);
+			}
 		});
+
+		for (const [id, indexes] of processedIdMap.entries()) {
+			if (indexes.length > 1) {
+				errors.push({
+					file: 'journal-inbox/processed.json',
+					message: `duplicate processed id: ${id}`,
+				});
+			}
+		}
+		for (const [hash, indexes] of processedHashMap.entries()) {
+			if (indexes.length > 1) {
+				errors.push({
+					file: 'journal-inbox/processed.json',
+					message: `duplicate processed contentHash: ${hash}`,
+				});
+			}
+		}
 	} catch (error) {
 		errors.push({
 			file: 'journal-inbox/processed.json',
@@ -272,22 +384,48 @@ export const validateInbox = () => {
 		const entryWarnings = [];
 
 		for (const key of requiredFrontmatter) {
-			if (data[key] === undefined || data[key] === '') {
+			if (valueIsMissing(data[key])) {
 				entryErrors.push(`missing required frontmatter: ${key}`);
 			}
 		}
 
-		if (data.source && !allowedSources.has(data.source)) {
+		if (data.id !== undefined && typeof data.id !== 'string') {
+			entryErrors.push('id must be a string');
+		}
+		if (data.createdAt !== undefined && typeof data.createdAt !== 'string') {
+			entryErrors.push('createdAt must be a string');
+		}
+		if (data.source !== undefined && typeof data.source !== 'string') {
+			entryErrors.push('source must be a string');
+		}
+		if (data.privacy !== undefined && typeof data.privacy !== 'string') {
+			entryErrors.push('privacy must be a string');
+		}
+		if (typeof data.source === 'string' && !allowedSources.has(data.source)) {
 			entryErrors.push(`invalid source: ${data.source}`);
 		}
-		if (data.privacy && !allowedPrivacy.has(data.privacy)) {
+		if (typeof data.privacy === 'string' && !allowedPrivacy.has(data.privacy)) {
 			entryErrors.push(`invalid privacy: ${data.privacy}`);
 		}
-		if (data.createdAt && Number.isNaN(Date.parse(data.createdAt))) {
-			entryErrors.push('invalid createdAt timestamp');
+		if (typeof data.createdAt === 'string') {
+			try {
+				getDatePart(data.createdAt);
+			} catch {
+				entryErrors.push('invalid createdAt timestamp');
+			}
 		}
 		if (data.topics !== undefined && !Array.isArray(data.topics)) {
 			entryErrors.push('topics must be an array');
+		}
+		if (
+			Array.isArray(data.topics) &&
+			data.topics.some((topic) => typeof topic !== 'string')
+		) {
+			entryErrors.push('topics must contain only strings');
+		}
+		for (const key of ['createJournal', 'updateWeekly']) {
+			const error = validateBooleanLike(data[key], key);
+			if (error) entryErrors.push(error);
 		}
 
 		for (const section of requiredSections) {
@@ -374,13 +512,32 @@ export const printValidationReport = (result) => {
 	);
 };
 
-export const getIsoWeek = (dateLike) => {
-	const dateText = String(dateLike).slice(0, 10);
-	const [year, month, day] = dateText.split('-').map(Number);
-	if (!year || !month || !day) {
-		throw new Error(`Invalid date for ISO week: ${dateLike}`);
+export const getDatePart = (dateLike) => {
+	const dateText = String(dateLike);
+	const match = dateText.match(/^(\d{4})-(\d{2})-(\d{2})/);
+	if (!match || Number.isNaN(Date.parse(dateText))) {
+		throw new Error(`Invalid date: ${dateLike}`);
 	}
 
+	const [, yearText, monthText, dayText] = match;
+	const year = Number(yearText);
+	const month = Number(monthText);
+	const day = Number(dayText);
+	const utcDate = new Date(Date.UTC(year, month - 1, day));
+	if (
+		utcDate.getUTCFullYear() !== year ||
+		utcDate.getUTCMonth() !== month - 1 ||
+		utcDate.getUTCDate() !== day
+	) {
+		throw new Error(`Invalid date: ${dateLike}`);
+	}
+
+	return `${yearText}-${monthText}-${dayText}`;
+};
+
+export const getIsoWeek = (dateLike) => {
+	const dateText = getDatePart(dateLike);
+	const [year, month, day] = dateText.split('-').map(Number);
 	const date = new Date(Date.UTC(year, month - 1, day));
 	const dayOfWeek = date.getUTCDay() || 7;
 	date.setUTCDate(date.getUTCDate() + 4 - dayOfWeek);
@@ -393,14 +550,25 @@ export const getIsoWeek = (dateLike) => {
 };
 
 export const slugify = (value, fallback = 'conversation') => {
-	const slug = String(value)
+	const fallbackSlug = String(fallback || 'conversation')
+		.normalize('NFKC')
+		.toLowerCase()
+		.replace(/[\u0000-\u001f\u007f\\/]+/g, ' ')
+		.replace(/\.\.+/g, ' ')
+		.replace(/[^\p{Letter}\p{Number}]+/gu, '-')
+		.replace(/^-+|-+$/g, '')
+		.slice(0, 80);
+	const slug = String(value ?? '')
+		.normalize('NFKC')
 		.trim()
 		.toLowerCase()
+		.replace(/[\u0000-\u001f\u007f\\/]+/g, ' ')
+		.replace(/\.\.+/g, ' ')
 		.replace(/[^\p{Letter}\p{Number}]+/gu, '-')
 		.replace(/^-+|-+$/g, '')
 		.slice(0, 80);
 
-	return slug || fallback;
+	return slug || fallbackSlug || 'conversation';
 };
 
 export const markdownToDescription = (value) => {
