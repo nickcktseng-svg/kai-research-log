@@ -105,41 +105,58 @@ import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
 		<main>
 			<h1 class="page-title">關於我</h1>
 			<p class="page-desc">
-				這裡先放一版研究定位與網站介紹文字，之後可以再依課程、實驗室與研究題目細修。
+				這個頁面整理網站的研究方向、工具脈絡與建立目的，讓訪客能快速理解這個研究管理平台目前正在累積什麼。
 			</p>
 
 			<div class="content-grid">
 				<section class="section">
-					<h2>研究定位</h2>
+					<h2>關於這個網站</h2>
 					<p>
-						我是曾智凱，目前以計算化學、材料模型建構與研究工作流程整理為主要學習方向。這個網站會持續累積我的日常任務、研究筆記、文獻摘要與工具開發紀錄，讓零散的學習過程變成可以回頭檢索的研究脈絡。
+						Kai Research Log 是用來整理研究日誌、任務、週報、文獻與工具開發紀錄的個人研究網站。它的重點不是一次寫成完整成果，而是把每天遇到的問題、嘗試過的方法與後續想法留下來，逐步形成可回頭檢索的研究脈絡。
 					</p>
 				</section>
 
 				<section class="section">
-					<h2>目前研究方向</h2>
+					<h2>目前關注的主題</h2>
 					<ul>
-						<li>密度泛函理論 DFT 與 VASP 計算</li>
-						<li>表面、晶面與 slab 結構模型建構</li>
-						<li>ASE、Python 與研究自動化工具開發</li>
+						<li>計算化學、DFT 與 VASP 計算流程</li>
 						<li>HPC、Linux 與可復現的計算環境</li>
-						<li>AI 輔助文獻整理與研究管理流程</li>
+						<li>ASE、Python 與研究自動化工具</li>
+						<li>Slab Builder、表面模型與晶面結構建構</li>
+						<li>文獻搜尋、閱讀紀錄與研究知識管理</li>
 					</ul>
 				</section>
 
 				<section class="section">
-					<h2>網站用途</h2>
+					<h2>使用的研究與開發工具</h2>
 					<p>
-						這個網站目前定位為個人研究管理中心：公開頁面用來展示學習日誌與整理成果；本人登入後則可新增任務、撰寫 Blog 日誌、保存研究筆記，並透過週報頁回顧一週累積。
+						網站目前以 Astro 建立前端與內容頁面，並透過 Cloudflare Workers、D1 與 OpenAlex 串接任務、週報、研究筆記、文獻搜尋與文獻庫。研究工具面則圍繞 VASP、ASE、HPC 與 Python 工作流整理。
 					</p>
 					<div class="pill-row">
 						<span class="pill">Python</span>
 						<span class="pill">ASE</span>
 						<span class="pill">VASP</span>
+						<span class="pill">HPC</span>
+						<span class="pill">Slab Builder</span>
 						<span class="pill">Astro</span>
+						<span class="pill">Cloudflare Workers</span>
 						<span class="pill">Cloudflare D1</span>
 						<span class="pill">OpenAlex</span>
 					</div>
+				</section>
+
+				<section class="section">
+					<h2>建立網站的目的</h2>
+					<p>
+						這個網站把 Blog、研究筆記、任務、週報與文獻工具放在同一個地方，讓研究過程不只停留在零散檔案或對話紀錄中。之後回顧某個計算問題、工具版本、文獻線索或每週進度時，可以直接從網站找到當時的脈絡。
+					</p>
+				</section>
+
+				<section class="section">
+					<h2>目前功能與未來方向</h2>
+					<p>
+						目前網站已支援研究日誌、分類與標籤、任務管理、週報、Dashboard、文獻搜尋、文獻庫與本人登入後的管理入口。下一步會繼續整理名稱一致性、共用元件、圖片儲存流程，以及更完整的本地端文獻分析與週報整理方式。
+					</p>
 				</section>
 			</div>
 		</main>
