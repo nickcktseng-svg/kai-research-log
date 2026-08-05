@@ -33,5 +33,58 @@
     ],
     "categories": ["網站開發", "研究整理"],
     "tags": ["Astro", "任務管理", "週報"]
+  },
+  {
+    "id": "weekly-2026-w32",
+    "week": "2026-W32",
+    "title": "研究網站內容整理與日誌自動化",
+    "dateRange": "2026-08-03 ~ 2026-08-09",
+    "summary": "本週完成研究網站內容審計與安全整理，並建立 Conversation Journal Pipeline v1，使 Codex 或人工整理的 ChatGPT handoff 可以轉換成研究日誌與週報草稿。",
+    "completed": [
+      "完成網站內容與結構審計，整理重複內容、過時文字與命名不一致問題",
+      "整理重複文章、README、About 頁與 RSS draft 處理",
+      "建立 Conversation Inbox 與 handoff template",
+      "建立日誌與週報草稿產生器",
+      "加入 processed.json 與 SHA-256 重複處理防護",
+      "使用 js-yaml 強化 frontmatter 解析",
+      "加入路徑、檔名與敏感資訊安全檢查",
+      "建立 Node.js 自動測試與第一次真實 handoff 測試"
+    ],
+    "progress": [
+      "研究網站開始具備將開發過程轉換為長期研究紀錄的流程",
+      "Blog 草稿與正式週報資料已分離",
+      "Pipeline 已能依 createdAt 將內容整理到正確 ISO week",
+      "自動產生內容仍保留人工審核機制"
+    ],
+    "problems": [
+      "網站原本存在重複與過時內容",
+      "自行解析 YAML 容易出現格式問題",
+      "同一對話可能被重複處理",
+      "檔案產生過程需要防止路徑穿越與覆蓋",
+      "ChatGPT 對話目前無法直接自動同步到 Repository"
+    ],
+    "solutions": [
+      "先建立內容審計報告，再分批進行安全整理",
+      "改用 js-yaml 處理 frontmatter",
+      "使用 conversation id、SHA-256 與 processed.json 避免重複處理",
+      "限制所有讀寫目錄並加入檔名衝突處理",
+      "將 ChatGPT 對話先整理成結構化 handoff",
+      "所有生成內容先保持草稿並人工確認"
+    ],
+    "unfinished": [
+      "週報草稿仍需人工合併到正式週報",
+      "ChatGPT handoff 仍需人工建立",
+      "尚未建立自動草稿 Pull Request",
+      "尚未加入 OpenAI API 內容分類與語意重複檢查"
+    ],
+    "next": [
+      "實際使用 Pipeline 累積幾次研究紀錄",
+      "檢查生成文章是否太像工作清單",
+      "改善文章草稿與週報草稿的審核方式",
+      "評估 GitHub Action 自動建立草稿 PR",
+      "再決定是否進入 Conversation Journal Pipeline v2"
+    ],
+    "categories": ["網站開發", "研究整理"],
+    "tags": ["Astro", "Codex", "研究日誌", "自動化", "Node.js"]
   }
 ]
