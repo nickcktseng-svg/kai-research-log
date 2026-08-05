@@ -17,6 +17,9 @@ const blog = defineCollection({
 			tags: z.array(z.string()).default([]),
 			category: z.string().default('未分類'),
 			draft: z.boolean().default(false),
+			generated: z.boolean().default(false),
+			reviewStatus: z.enum(['needs-review', 'reviewed']).optional(),
+			sourceConversationIds: z.array(z.string()).default([]),
 		}),
 });
 

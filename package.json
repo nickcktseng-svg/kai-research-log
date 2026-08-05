@@ -16,13 +16,18 @@
     "db:local:seed": "npm run db:seed:generate && wrangler d1 execute kai-research-db --local --file=./db/seed.sql",
     "db:remote:seed": "npm run db:seed:generate && wrangler d1 execute kai-research-db --remote --file=./db/seed.sql",
     "db:local:clear-tasks": "wrangler d1 execute kai-research-db --local --file=./db/clear-tasks.sql",
-    "db:remote:clear-tasks": "wrangler d1 execute kai-research-db --remote --file=./db/clear-tasks.sql"
+    "db:remote:clear-tasks": "wrangler d1 execute kai-research-db --remote --file=./db/clear-tasks.sql",
+    "journal:validate": "node scripts/validate-journal-inbox.mjs",
+    "journal:dry-run": "node scripts/generate-journal-drafts.mjs --dry-run",
+    "journal:generate": "node scripts/generate-journal-drafts.mjs",
+    "journal:test": "node --test tests/journal-pipeline.test.mjs"
   },
   "dependencies": {
     "@astrojs/mdx": "^7.0.0",
     "@astrojs/rss": "^4.0.18",
     "@astrojs/sitemap": "^3.7.3",
     "astro": "^7.0.3",
+    "js-yaml": "^4.2.0",
     "sharp": "^0.34.3"
   },
   "devDependencies": {
