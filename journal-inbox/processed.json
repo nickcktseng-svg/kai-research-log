@@ -1,1 +1,10 @@
-[]
+[
+  {
+    "id": "conversation-20260805-journal-pipeline",
+    "sourceFile": "journal-inbox/processed/2026-08-05-conversation-journal-pipeline.md",
+    "contentHash": "3c008f55e6263fd95b067c75a26d9d2d50d675ac8ca7e8c8cdd73d7af2eb7151",
+    "processedAt": "2026-08-05T05:36:07.138Z",
+    "journalDraft": "src/content/blog/generated/20260805-建立與強化-conversation-journal-pipeline-v1.md",
+    "weeklyDraftWeek": "2026-W32"
+  }
+]
