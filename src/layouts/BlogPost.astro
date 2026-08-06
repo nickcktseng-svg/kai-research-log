@@ -6,7 +6,15 @@ import Footer from '../components/Footer.astro';
 import FormattedDate from '../components/FormattedDate.astro';
 import Header from '../components/Header.astro';
 
-type Props = CollectionEntry<'blog'>['data'];
+type Heading = {
+	depth: number;
+	slug: string;
+	text: string;
+};
+
+type Props = CollectionEntry<'blog'>['data'] & {
+	headings?: Heading[];
+};
 
 const {
 	title,
@@ -16,6 +24,8 @@ const {
 	heroImage,
 	category = '未分類',
 	tags = [],
+	showToc = false,
+	headings = [],
 } = Astro.props;
 
 const displayCategory = category || '未分類';
@@ -26,6 +36,16 @@ const getCategoryUrl = (categoryName: string) =>
 	`/categories/${encodeURIComponent(categoryName)}/`;
 
 const getTagUrl = (tag: string) => `/tags/${encodeURIComponent(tag)}/`;
+
+const tocHeadings = headings.filter(
+	(heading) =>
+		heading.depth >= 2 &&
+		heading.depth <= 3 &&
+		heading.slug &&
+		heading.text !== '快速導覽',
+);
+
+const hasToc = showToc && tocHeadings.length > 0;
 ---
 
 <!doctype html>
@@ -164,6 +184,86 @@ const getTagUrl = (tag: string) => `/tags/${encodeURIComponent(tag)}/`;
 				background: #f3f4f6;
 			}
 
+			.toc {
+				margin: 0 0 2.5em;
+				padding: 20px;
+				border: 1px solid #e5e7eb;
+				border-radius: 8px;
+				background: #fff;
+				box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+			}
+
+			.toc-title {
+				margin: 0 0 14px;
+				color: #111;
+				font-size: 1rem;
+				font-weight: 800;
+			}
+
+			.toc-list {
+				display: grid;
+				grid-template-columns: repeat(2, minmax(0, 1fr));
+				gap: 8px 12px;
+				margin: 0;
+				padding: 0;
+				list-style: none;
+			}
+
+			.toc-link {
+				display: block;
+				padding: 8px 10px;
+				border-radius: 6px;
+				color: #444;
+				font-size: 0.92rem;
+				line-height: 1.5;
+				text-decoration: none;
+				transition:
+					background-color 0.2s ease,
+					color 0.2s ease;
+			}
+
+			.toc-link:hover {
+				background: #f3f4f6;
+				color: #111;
+			}
+
+			.toc-depth-3 .toc-link {
+				padding-left: 22px;
+				color: #666;
+				font-size: 0.88rem;
+			}
+
+			.prose :global(table) {
+				display: block;
+				width: 100%;
+				margin: 1.5em 0;
+				border-collapse: collapse;
+				overflow-x: auto;
+				font-size: 0.95rem;
+			}
+
+			.prose :global(th),
+			.prose :global(td) {
+				padding: 10px 12px;
+				border: 1px solid #e5e7eb;
+				text-align: left;
+				vertical-align: top;
+			}
+
+			.prose :global(th) {
+				background: #f8fafc;
+				color: #111;
+				font-weight: 800;
+			}
+
+			.prose :global(blockquote) {
+				margin: 1.5em 0;
+				padding: 0.1em 0 0.1em 1em;
+				border-left: 4px solid #111;
+				color: #333;
+				font-weight: 600;
+			}
+
 			hr {
 				border: none;
 				border-top: 1px solid #eaeaea;
@@ -173,6 +273,10 @@ const getTagUrl = (tag: string) => `/tags/${encodeURIComponent(tag)}/`;
 			@media (max-width: 720px) {
 				.title h1 {
 					font-size: 2.25rem;
+				}
+
+				.toc-list {
+					grid-template-columns: 1fr;
 				}
 			}
 		</style>
@@ -237,6 +341,23 @@ const getTagUrl = (tag: string) => `/tags/${encodeURIComponent(tag)}/`;
 
 						<hr />
 					</div>
+
+					{
+						hasToc && (
+							<nav class="toc" aria-label="文章章節快速導覽">
+								<p class="toc-title">快速導覽</p>
+								<ol class="toc-list">
+									{tocHeadings.map((heading) => (
+										<li class={`toc-depth-${heading.depth}`}>
+											<a class="toc-link" href={`#${heading.slug}`}>
+												{heading.text}
+											</a>
+										</li>
+									))}
+								</ol>
+							</nav>
+						)
+					}
 
 					<slot />
 				</div>

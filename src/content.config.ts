@@ -20,6 +20,7 @@ const blog = defineCollection({
 			generated: z.boolean().default(false),
 			reviewStatus: z.enum(['needs-review', 'reviewed']).optional(),
 			sourceConversationIds: z.array(z.string()).default([]),
+			showToc: z.boolean().default(false),
 		}),
 });
 

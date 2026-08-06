@@ -37,7 +37,7 @@ const Content = renderedPost?.Content;
 
 {
 	staticPost && Content ? (
-		<BlogPost {...staticPost.data}>
+		<BlogPost {...staticPost.data} headings={renderedPost.headings}>
 			<Content />
 		</BlogPost>
 	) : (
