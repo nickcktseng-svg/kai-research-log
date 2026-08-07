@@ -134,8 +134,9 @@ const reportSections = [
 				font-size: 3.5rem;
 				font-weight: 800;
 				margin-bottom: 10px;
-				letter-spacing: -0.02em;
+				letter-spacing: 0;
 				color: #111;
+				overflow-wrap: anywhere;
 			}
 
 			.page-desc {
@@ -155,6 +156,8 @@ const reportSections = [
 			.action-link {
 				display: inline-flex;
 				align-items: center;
+				justify-content: center;
+				min-height: 44px;
 				padding: 10px 16px;
 				border: 1px solid #e5e7eb;
 				border-radius: 999px;
@@ -196,9 +199,10 @@ const reportSections = [
 			.report-card {
 				padding: 28px;
 				border: 1px solid #eee;
-				border-radius: 16px;
+				border-radius: 8px;
 				background: #fff;
 				box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+				min-width: 0;
 			}
 
 			.report-header {
@@ -213,6 +217,7 @@ const reportSections = [
 				color: #111;
 				font-size: 1.6rem;
 				line-height: 1.4;
+				overflow-wrap: anywhere;
 			}
 
 			.report-date {
@@ -237,6 +242,7 @@ const reportSections = [
 				color: #444;
 				font-size: 1rem;
 				line-height: 1.8;
+				overflow-wrap: break-word;
 			}
 
 			.report-sections {
@@ -269,6 +275,7 @@ const reportSections = [
 				gap: 8px;
 				padding-top: 20px;
 				border-top: 1px solid #eee;
+				min-width: 0;
 			}
 
 			.pill {
@@ -280,7 +287,9 @@ const reportSections = [
 				padding: 7px 10px;
 				font-size: 0.8rem;
 				font-weight: 600;
-				line-height: 1;
+				line-height: 1.2;
+				max-width: 100%;
+				overflow-wrap: anywhere;
 			}
 
 			.pill-dark {
@@ -289,20 +298,72 @@ const reportSections = [
 			}
 
 			@media (max-width: 720px) {
+				main {
+					padding: 32px 16px;
+				}
+
 				.page-title {
-					font-size: 2.5rem;
+					font-size: 2.35rem;
+					line-height: 1.12;
+				}
+
+				.page-desc {
+					font-size: 1rem;
+					line-height: 1.7;
+				}
+
+				.page-actions {
+					gap: 8px;
+					margin-bottom: 32px;
+				}
+
+				.action-link {
+					flex: 1 1 calc(50% - 8px);
+					padding-right: 13px;
+					padding-left: 13px;
+					font-size: 0.9rem;
+				}
+
+				.section-title {
+					font-size: 1.35rem;
 				}
 
 				.report-card {
-					padding: 22px;
+					padding: 20px;
 				}
 
 				.report-header {
 					flex-direction: column;
+					gap: 12px;
+				}
+
+				.report-title {
+					font-size: 1.28rem;
+					line-height: 1.35;
 				}
 
 				.report-sections {
 					grid-template-columns: 1fr;
+					gap: 20px;
+				}
+
+				.summary {
+					margin-bottom: 22px;
+				}
+			}
+
+			@media (max-width: 360px) {
+				main {
+					padding-right: 14px;
+					padding-left: 14px;
+				}
+
+				.action-link {
+					flex-basis: 100%;
+				}
+
+				.report-card {
+					padding: 16px;
 				}
 			}
 		</style>

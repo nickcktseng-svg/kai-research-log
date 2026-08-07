@@ -179,8 +179,9 @@ const taskSections = [
 				font-size: 3.5rem;
 				font-weight: 800;
 				margin-bottom: 10px;
-				letter-spacing: -0.02em;
+				letter-spacing: 0;
 				color: #111;
+				overflow-wrap: anywhere;
 			}
 
 			.page-desc {
@@ -200,6 +201,8 @@ const taskSections = [
 			.task-action-link {
 				display: inline-flex;
 				align-items: center;
+				justify-content: center;
+				min-height: 44px;
 				padding: 10px 16px;
 				border: 1px solid #e5e7eb;
 				border-radius: 999px;
@@ -266,9 +269,10 @@ const taskSections = [
 				height: 100%;
 				padding: 24px;
 				border: 1px solid #eee;
-				border-radius: 16px;
+				border-radius: 8px;
 				background: #fff;
 				box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+				min-width: 0;
 			}
 
 			.task-title {
@@ -276,12 +280,14 @@ const taskSections = [
 				color: #111;
 				font-size: 1.2rem;
 				line-height: 1.45;
+				overflow-wrap: anywhere;
 			}
 
 			.task-description {
 				margin: 0;
 				color: #555;
 				line-height: 1.75;
+				overflow-wrap: break-word;
 			}
 
 			.task-meta,
@@ -289,6 +295,7 @@ const taskSections = [
 				display: flex;
 				flex-wrap: wrap;
 				gap: 8px;
+				min-width: 0;
 			}
 
 			.pill {
@@ -298,7 +305,9 @@ const taskSections = [
 				padding: 7px 10px;
 				font-size: 0.8rem;
 				font-weight: 600;
-				line-height: 1;
+				line-height: 1.2;
+				max-width: 100%;
+				overflow-wrap: anywhere;
 			}
 
 			.pill-dark {
@@ -321,23 +330,68 @@ const taskSections = [
 				margin: 0;
 				padding: 24px;
 				border: 1px solid #eee;
-				border-radius: 16px;
+				border-radius: 8px;
 				background: #fff;
 				color: #666;
 			}
 
 			@media (max-width: 720px) {
+				main {
+					padding: 32px 16px;
+				}
+
 				.page-title {
-					font-size: 2.5rem;
+					font-size: 2.35rem;
+					line-height: 1.12;
+				}
+
+				.page-desc {
+					font-size: 1rem;
+					line-height: 1.7;
+				}
+
+				.task-action-link {
+					width: 100%;
+				}
+
+				.task-section {
+					margin-bottom: 38px;
+				}
+
+				.section-title {
+					font-size: 1.35rem;
 				}
 
 				.section-heading {
 					align-items: flex-start;
 					flex-direction: column;
+					gap: 8px;
 				}
 
 				.task-list {
 					grid-template-columns: 1fr;
+					gap: 16px;
+				}
+
+				.task-card {
+					gap: 13px;
+					padding: 20px;
+				}
+
+				.task-title {
+					font-size: 1.1rem;
+				}
+			}
+
+			@media (max-width: 360px) {
+				main {
+					padding-right: 14px;
+					padding-left: 14px;
+				}
+
+				.task-card,
+				.empty-state {
+					padding: 16px;
 				}
 			}
 		</style>

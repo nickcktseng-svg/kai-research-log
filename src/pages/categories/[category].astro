@@ -50,8 +50,9 @@ const posts = (
 				font-size: 3.2rem;
 				font-weight: 800;
 				margin-bottom: 10px;
-				letter-spacing: -0.02em;
+				letter-spacing: 0;
 				color: #111;
+				overflow-wrap: anywhere;
 			}
 
 			.page-desc {
@@ -71,6 +72,7 @@ const posts = (
 
 			.post-card {
 				transition: transform 0.2s ease;
+				min-width: 0;
 			}
 
 			.post-card:hover {
@@ -97,6 +99,7 @@ const posts = (
 				line-height: 1.4;
 				font-size: 1.35rem;
 				font-weight: 700;
+				overflow-wrap: anywhere;
 			}
 
 			.date {
@@ -109,6 +112,7 @@ const posts = (
 				margin-top: 10px;
 				color: #555;
 				line-height: 1.7;
+				overflow-wrap: break-word;
 			}
 
 			.back-links {
@@ -129,12 +133,38 @@ const posts = (
 			}
 
 			@media (max-width: 720px) {
+				main {
+					padding: 32px 16px;
+				}
+
 				.page-title {
-					font-size: 2.4rem;
+					font-size: 2.25rem;
+					line-height: 1.12;
+				}
+
+				.page-desc {
+					margin-bottom: 28px;
+					font-size: 1rem;
 				}
 
 				.post-list {
 					grid-template-columns: 1fr;
+					gap: 24px;
+				}
+
+				.post-title {
+					font-size: 1.22rem;
+				}
+
+				.back-links {
+					gap: 12px;
+				}
+			}
+
+			@media (max-width: 360px) {
+				main {
+					padding-right: 14px;
+					padding-left: 14px;
 				}
 			}
 		</style>

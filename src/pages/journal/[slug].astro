@@ -71,6 +71,7 @@ const formatDate = new Intl.DateTimeFormat('zh-TW', {
 				font-weight: 800;
 				letter-spacing: 0;
 				line-height: 1.15;
+				overflow-wrap: anywhere;
 			}
 
 			.page-summary {
@@ -79,6 +80,7 @@ const formatDate = new Intl.DateTimeFormat('zh-TW', {
 				color: #555;
 				font-size: 1.08rem;
 				line-height: 1.8;
+				overflow-wrap: break-word;
 			}
 
 			.entry-meta,
@@ -86,6 +88,7 @@ const formatDate = new Intl.DateTimeFormat('zh-TW', {
 				display: flex;
 				flex-wrap: wrap;
 				gap: 8px;
+				min-width: 0;
 			}
 
 			.pill {
@@ -95,7 +98,9 @@ const formatDate = new Intl.DateTimeFormat('zh-TW', {
 				padding: 7px 10px;
 				font-size: 0.8rem;
 				font-weight: 700;
-				line-height: 1;
+				line-height: 1.2;
+				max-width: 100%;
+				overflow-wrap: anywhere;
 			}
 
 			.pill-dark {
@@ -117,6 +122,7 @@ const formatDate = new Intl.DateTimeFormat('zh-TW', {
 				color: #222;
 				font-size: 1.05rem;
 				line-height: 1.85;
+				overflow-wrap: break-word;
 			}
 
 			.entry-content :global(h2),
@@ -155,9 +161,39 @@ const formatDate = new Intl.DateTimeFormat('zh-TW', {
 				color: #555;
 			}
 
+			.entry-content :global(pre),
+			.entry-content :global(table) {
+				max-width: 100%;
+				overflow-x: auto;
+				-webkit-overflow-scrolling: touch;
+			}
+
 			@media (max-width: 720px) {
+				main {
+					padding: 32px 16px;
+				}
+
+				.entry-header {
+					margin-bottom: 30px;
+					padding-bottom: 22px;
+				}
+
 				.page-title {
-					font-size: 2.25rem;
+					font-size: 2rem;
+					line-height: 1.18;
+				}
+
+				.page-summary,
+				.entry-content {
+					font-size: 1rem;
+					line-height: 1.78;
+				}
+			}
+
+			@media (max-width: 360px) {
+				main {
+					padding-right: 14px;
+					padding-left: 14px;
 				}
 			}
 		</style>

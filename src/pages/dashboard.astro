@@ -305,8 +305,9 @@ const truncate = (value: string, maxLength: number) =>
 				font-size: 3.5rem;
 				font-weight: 800;
 				margin-bottom: 10px;
-				letter-spacing: -0.02em;
+				letter-spacing: 0;
 				color: #111;
+				overflow-wrap: anywhere;
 			}
 
 			.page-desc {
@@ -346,6 +347,7 @@ const truncate = (value: string, maxLength: number) =>
 				display: inline-flex;
 				align-items: center;
 				width: fit-content;
+				min-height: 44px;
 				border: 1px solid #e5e7eb;
 				border-radius: 999px;
 				background: #fff;
@@ -393,9 +395,10 @@ const truncate = (value: string, maxLength: number) =>
 			.quick-card,
 			.empty-state {
 				border: 1px solid #eee;
-				border-radius: 16px;
+				border-radius: 8px;
 				background: #fff;
 				box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+				min-width: 0;
 			}
 
 			.stat-card {
@@ -438,6 +441,7 @@ const truncate = (value: string, maxLength: number) =>
 				margin: 0;
 				color: #111;
 				line-height: 1.45;
+				overflow-wrap: anywhere;
 			}
 
 			.card-title,
@@ -471,6 +475,7 @@ const truncate = (value: string, maxLength: number) =>
 				margin: 0;
 				color: #555;
 				line-height: 1.75;
+				overflow-wrap: break-word;
 			}
 
 			.meta-row,
@@ -478,6 +483,7 @@ const truncate = (value: string, maxLength: number) =>
 				display: flex;
 				flex-wrap: wrap;
 				gap: 8px;
+				min-width: 0;
 			}
 
 			.pill {
@@ -487,7 +493,9 @@ const truncate = (value: string, maxLength: number) =>
 				padding: 7px 10px;
 				font-size: 0.8rem;
 				font-weight: 600;
-				line-height: 1;
+				line-height: 1.2;
+				max-width: 100%;
+				overflow-wrap: anywhere;
 			}
 
 			.pill-dark {
@@ -571,22 +579,68 @@ const truncate = (value: string, maxLength: number) =>
 			}
 
 			@media (max-width: 720px) {
+				main {
+					padding: 32px 16px;
+				}
+
 				.page-title {
-					font-size: 2.5rem;
+					font-size: 2.35rem;
+					line-height: 1.12;
+				}
+
+				.page-desc {
+					margin-bottom: 32px;
+					font-size: 1rem;
+					line-height: 1.7;
+				}
+
+				.dashboard-section {
+					margin-bottom: 38px;
+				}
+
+				.section-title {
+					font-size: 1.35rem;
 				}
 
 				.section-heading,
 				.report-header {
 					align-items: flex-start;
 					flex-direction: column;
+					gap: 12px;
+				}
+
+				.section-link,
+				.card-link {
+					width: 100%;
+					justify-content: center;
+				}
+
+				.stat-card {
+					padding: 18px;
+				}
+
+				.stat-value {
+					font-size: 2rem;
+				}
+
+				.task-card,
+				.post-card,
+				.quick-card {
+					gap: 13px;
+					padding: 20px;
 				}
 
 				.report-card {
-					padding: 22px;
+					padding: 20px;
+				}
+
+				.report-title {
+					font-size: 1.3rem;
 				}
 
 				.report-columns {
 					grid-template-columns: 1fr;
+					gap: 18px;
 				}
 			}
 
@@ -596,6 +650,22 @@ const truncate = (value: string, maxLength: number) =>
 				.post-grid,
 				.quick-grid {
 					grid-template-columns: 1fr;
+				}
+			}
+
+			@media (max-width: 360px) {
+				main {
+					padding-right: 14px;
+					padding-left: 14px;
+				}
+
+				.stat-card,
+				.task-card,
+				.post-card,
+				.quick-card,
+				.report-card,
+				.empty-state {
+					padding: 16px;
 				}
 			}
 		</style>

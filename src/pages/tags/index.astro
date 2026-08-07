@@ -37,8 +37,9 @@ const tags = Array.from(tagCounts.entries())
 				font-size: 3.5rem;
 				font-weight: 800;
 				margin-bottom: 10px;
-				letter-spacing: -0.02em;
+				letter-spacing: 0;
 				color: #111;
+				overflow-wrap: anywhere;
 			}
 
 			.page-desc {
@@ -60,11 +61,14 @@ const tags = Array.from(tagCounts.entries())
 				display: inline-flex;
 				align-items: center;
 				gap: 8px;
+				min-height: 44px;
 				padding: 10px 14px;
 				border-radius: 999px;
 				background: #f3f4f6;
 				color: #333;
 				text-decoration: none;
+				max-width: 100%;
+				overflow-wrap: anywhere;
 				transition:
 					background-color 0.2s ease,
 					transform 0.2s ease;
@@ -93,8 +97,39 @@ const tags = Array.from(tagCounts.entries())
 			}
 
 			@media (max-width: 720px) {
+				main {
+					padding: 32px 16px;
+				}
+
 				.page-title {
-					font-size: 2.5rem;
+					font-size: 2.35rem;
+					line-height: 1.12;
+				}
+
+				.page-desc {
+					margin-bottom: 28px;
+					font-size: 1rem;
+				}
+
+				.tag-list {
+					gap: 8px;
+				}
+
+				.tag-link {
+					padding-right: 12px;
+					padding-left: 12px;
+					font-size: 0.92rem;
+				}
+			}
+
+			@media (max-width: 360px) {
+				main {
+					padding-right: 14px;
+					padding-left: 14px;
+				}
+
+				.tag-link {
+					font-size: 0.88rem;
 				}
 			}
 		</style>

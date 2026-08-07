@@ -1,15 +1,30 @@
 ---
-import { SITE_TITLE } from '../consts';
 import HeaderLink from './HeaderLink.astro';
 ---
 
 <header>
 	<nav class="nav-container">
 		<h2><a href="/" class="site-logo">曾智凱 <span>Kai</span></a></h2>
-		<div class="internal-links">
+		<button
+			class="menu-toggle"
+			type="button"
+			aria-expanded="false"
+			aria-controls="site-navigation"
+			aria-label="開啟導覽選單"
+		>
+			<span class="menu-icon" aria-hidden="true">
+				<span></span>
+				<span></span>
+				<span></span>
+			</span>
+			<span class="menu-text">Menu</span>
+		</button>
+		<div class="internal-links" id="site-navigation">
 			<HeaderLink href="/">首頁 (Home)</HeaderLink>
 			<HeaderLink href="/dashboard">儀表板 (Dashboard)</HeaderLink>
 			<HeaderLink href="/blog">學習日誌 (Blog)</HeaderLink>
+			<HeaderLink href="/categories">分類 (Categories)</HeaderLink>
+			<HeaderLink href="/tags">標籤 (Tags)</HeaderLink>
 			<HeaderLink href="/journal">研究筆記 (Notes)</HeaderLink>
 			<HeaderLink href="/tasks">任務 (Tasks)</HeaderLink>
 			<HeaderLink href="/weekly">週報 (Weekly)</HeaderLink>
@@ -36,6 +51,7 @@ import HeaderLink from './HeaderLink.astro';
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
+		gap: 20px;
 		max-width: 1000px;
 		margin: 0 auto;
 		padding: 16px 0;
@@ -48,26 +64,69 @@ import HeaderLink from './HeaderLink.astro';
 		font-weight: 800;
 		color: #111;
 		text-decoration: none;
-		letter-spacing: -0.02em;
+		letter-spacing: 0;
 	}
 	.site-logo span {
 		color: #888;
 		font-weight: 600;
 		margin-left: 4px;
 	}
+	.menu-toggle {
+		display: none;
+		align-items: center;
+		justify-content: center;
+		gap: 8px;
+		min-height: 44px;
+		padding: 8px 12px;
+		border: 1px solid #e5e7eb;
+		border-radius: 999px;
+		background: #fff;
+		color: #111;
+		font: inherit;
+		font-size: 0.92rem;
+		font-weight: 700;
+		cursor: pointer;
+		transition:
+			background-color 0.2s ease,
+			border-color 0.2s ease;
+	}
+	.menu-toggle:hover {
+		background: #f3f4f6;
+		border-color: #d1d5db;
+	}
+	.menu-toggle:focus-visible {
+		outline: 3px solid #999;
+		outline-offset: 3px;
+	}
+	.menu-icon {
+		display: grid;
+		gap: 4px;
+		width: 18px;
+	}
+	.menu-icon span {
+		display: block;
+		width: 18px;
+		height: 2px;
+		border-radius: 999px;
+		background: currentColor;
+	}
 	.internal-links {
 		display: flex;
-		gap: 24px;
+		flex-wrap: wrap;
+		justify-content: flex-end;
+		gap: 8px 18px;
+		min-width: 0;
 	}
 	/* 覆寫預設的 HeaderLink 樣式 */
 	.internal-links :global(a) {
 		text-decoration: none;
 		color: #666;
 		font-weight: 500;
-		font-size: 0.95rem;
+		font-size: 0.92rem;
 		padding: 6px 0;
 		transition: color 0.2s ease;
 		border-bottom: 2px solid transparent;
+		overflow-wrap: anywhere;
 	}
 	.internal-links :global(a:hover) {
 		color: #111;
@@ -78,14 +137,75 @@ import HeaderLink from './HeaderLink.astro';
 		border-bottom-color: #111; /* 當前頁面會有底線提示 */
 	}
 	@media (max-width: 720px) {
+		header {
+			padding: 0 16px;
+		}
 		.nav-container {
-			flex-direction: column;
-			gap: 16px;
+			flex-wrap: wrap;
+			gap: 10px;
+			padding: 12px 0;
+		}
+		h2 {
+			font-size: 1.15rem;
+		}
+		.menu-toggle {
+			display: inline-flex;
 		}
 		.internal-links {
-			gap: 16px;
-			flex-wrap: wrap;
-			justify-content: center;
+			display: none;
+			flex: 0 0 100%;
+			flex-direction: column;
+			gap: 4px;
+			padding: 10px 0 4px;
+			border-top: 1px solid #eee;
+		}
+		.internal-links.is-open {
+			display: flex;
+		}
+		.internal-links :global(a) {
+			display: flex;
+			align-items: center;
+			min-height: 44px;
+			padding: 10px 0;
+			font-size: 1rem;
+			border-bottom-width: 0;
+		}
+		.internal-links :global(a.active) {
+			border-bottom-color: transparent;
 		}
 	}
 </style>
+
+<script>
+	document.addEventListener('DOMContentLoaded', () => {
+		const toggle = document.querySelector('.menu-toggle');
+		const nav = document.getElementById('site-navigation');
+
+		if (!(toggle instanceof HTMLButtonElement) || !nav) return;
+
+		const setOpen = (isOpen) => {
+			nav.classList.toggle('is-open', isOpen);
+			toggle.setAttribute('aria-expanded', String(isOpen));
+			toggle.setAttribute(
+				'aria-label',
+				isOpen ? '關閉導覽選單' : '開啟導覽選單',
+			);
+		};
+
+		toggle.addEventListener('click', () => {
+			setOpen(toggle.getAttribute('aria-expanded') !== 'true');
+		});
+
+		nav.querySelectorAll('a').forEach((link) => {
+			link.addEventListener('click', () => setOpen(false));
+		});
+
+		document.addEventListener('keydown', (event) => {
+			if (event.key === 'Escape') setOpen(false);
+		});
+
+		window.addEventListener('resize', () => {
+			if (window.innerWidth > 720) setOpen(false);
+		});
+	});
+</script>

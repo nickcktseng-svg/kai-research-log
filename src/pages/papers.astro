@@ -88,6 +88,7 @@ const truncate = (value: string, maxLength: number) =>
 				font-size: 3.4rem;
 				font-weight: 800;
 				letter-spacing: 0;
+				overflow-wrap: anywhere;
 			}
 
 			.page-desc {
@@ -127,6 +128,9 @@ const truncate = (value: string, maxLength: number) =>
 				font-weight: 700;
 				text-decoration: none;
 				cursor: pointer;
+				max-width: 100%;
+				text-align: center;
+				overflow-wrap: anywhere;
 				transition:
 					background-color 0.2s ease,
 					border-color 0.2s ease,
@@ -183,6 +187,7 @@ const truncate = (value: string, maxLength: number) =>
 				border-radius: 8px;
 				background: #fff;
 				box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+				min-width: 0;
 			}
 
 			.stat-card {
@@ -284,6 +289,7 @@ const truncate = (value: string, maxLength: number) =>
 				color: #111;
 				font-size: 1.35rem;
 				line-height: 1.38;
+				overflow-wrap: anywhere;
 			}
 
 			.paper-title a {
@@ -302,6 +308,7 @@ const truncate = (value: string, maxLength: number) =>
 			.empty-state {
 				color: #555;
 				line-height: 1.75;
+				overflow-wrap: break-word;
 			}
 
 			.paper-meta,
@@ -343,7 +350,9 @@ const truncate = (value: string, maxLength: number) =>
 				padding: 7px 10px;
 				font-size: 0.78rem;
 				font-weight: 700;
-				line-height: 1;
+				line-height: 1.2;
+				max-width: 100%;
+				overflow-wrap: anywhere;
 			}
 
 			.pill-dark {
@@ -433,11 +442,27 @@ const truncate = (value: string, maxLength: number) =>
 
 			@media (max-width: 720px) {
 				main {
-					padding: 32px 18px;
+					padding: 32px 16px;
 				}
 
 				.page-title {
-					font-size: 2.45rem;
+					font-size: 2.35rem;
+					line-height: 1.12;
+				}
+
+				.page-desc {
+					font-size: 1rem;
+					line-height: 1.7;
+				}
+
+				.page-actions,
+				.card-actions {
+					gap: 8px;
+				}
+
+				.page-actions > *,
+				.card-actions > * {
+					flex: 1 1 calc(50% - 8px);
 				}
 
 				.paper-header,
@@ -446,8 +471,53 @@ const truncate = (value: string, maxLength: number) =>
 					align-items: stretch;
 				}
 
+				.library-search {
+					min-width: 0;
+					width: 100%;
+				}
+
 				.status-filter {
 					width: 100%;
+					min-width: 0;
+				}
+
+				.stat-card,
+				.toolbar,
+				.paper-card,
+				.empty-state {
+					padding: 18px;
+				}
+
+				.paper-title {
+					font-size: 1.2rem;
+				}
+
+				.score-badge {
+					align-self: flex-start;
+					min-width: 0;
+				}
+			}
+
+			@media (max-width: 360px) {
+				main {
+					padding-right: 14px;
+					padding-left: 14px;
+				}
+
+				.page-actions > *,
+				.card-actions > * {
+					flex-basis: 100%;
+				}
+
+				.stat-grid {
+					grid-template-columns: 1fr;
+				}
+
+				.stat-card,
+				.toolbar,
+				.paper-card,
+				.empty-state {
+					padding: 16px;
 				}
 			}
 		</style>

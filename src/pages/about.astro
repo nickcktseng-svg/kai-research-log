@@ -24,6 +24,7 @@ import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
 				font-size: 3.5rem;
 				font-weight: 800;
 				letter-spacing: 0;
+				overflow-wrap: anywhere;
 			}
 
 			.page-desc {
@@ -45,6 +46,7 @@ import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
 				border-radius: 8px;
 				background: #fff;
 				box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+				min-width: 0;
 			}
 
 			.section h2 {
@@ -57,6 +59,7 @@ import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
 			.section li {
 				color: #555;
 				line-height: 1.8;
+				overflow-wrap: break-word;
 			}
 
 			.section p {
@@ -84,16 +87,48 @@ import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
 				padding: 7px 10px;
 				font-size: 0.82rem;
 				font-weight: 700;
-				line-height: 1;
+				line-height: 1.2;
+				max-width: 100%;
+				overflow-wrap: anywhere;
 			}
 
 			@media (max-width: 720px) {
+				main {
+					padding: 32px 16px;
+				}
+
 				.page-title {
-					font-size: 2.45rem;
+					font-size: 2.35rem;
+					line-height: 1.12;
+				}
+
+				.page-desc {
+					margin-bottom: 30px;
+					font-size: 1rem;
+					line-height: 1.7;
+				}
+
+				.content-grid {
+					gap: 16px;
 				}
 
 				.section {
-					padding: 22px;
+					padding: 20px;
+				}
+
+				.section h2 {
+					font-size: 1.2rem;
+				}
+			}
+
+			@media (max-width: 360px) {
+				main {
+					padding-right: 14px;
+					padding-left: 14px;
+				}
+
+				.section {
+					padding: 16px;
 				}
 			}
 		</style>
