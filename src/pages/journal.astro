@@ -53,6 +53,7 @@ const formatDate = new Intl.DateTimeFormat('zh-TW', {
 				font-size: 3.5rem;
 				font-weight: 800;
 				letter-spacing: 0;
+				overflow-wrap: anywhere;
 			}
 
 			.page-desc {
@@ -73,6 +74,8 @@ const formatDate = new Intl.DateTimeFormat('zh-TW', {
 			.action-link {
 				display: inline-flex;
 				align-items: center;
+				justify-content: center;
+				min-height: 44px;
 				padding: 10px 16px;
 				border: 1px solid #e5e7eb;
 				border-radius: 999px;
@@ -108,6 +111,7 @@ const formatDate = new Intl.DateTimeFormat('zh-TW', {
 				border-radius: 8px;
 				background: #fff;
 				box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+				min-width: 0;
 			}
 
 			.entry-card {
@@ -123,6 +127,7 @@ const formatDate = new Intl.DateTimeFormat('zh-TW', {
 				color: #111;
 				font-size: 1.35rem;
 				line-height: 1.45;
+				overflow-wrap: anywhere;
 			}
 
 			.entry-title a {
@@ -138,6 +143,7 @@ const formatDate = new Intl.DateTimeFormat('zh-TW', {
 				margin: 0;
 				color: #555;
 				line-height: 1.75;
+				overflow-wrap: break-word;
 			}
 
 			.entry-meta,
@@ -145,6 +151,7 @@ const formatDate = new Intl.DateTimeFormat('zh-TW', {
 				display: flex;
 				flex-wrap: wrap;
 				gap: 8px;
+				min-width: 0;
 			}
 
 			.pill {
@@ -154,7 +161,9 @@ const formatDate = new Intl.DateTimeFormat('zh-TW', {
 				padding: 7px 10px;
 				font-size: 0.8rem;
 				font-weight: 700;
-				line-height: 1;
+				line-height: 1.2;
+				max-width: 100%;
+				overflow-wrap: anywhere;
 			}
 
 			.pill-dark {
@@ -180,8 +189,56 @@ const formatDate = new Intl.DateTimeFormat('zh-TW', {
 			}
 
 			@media (max-width: 720px) {
+				main {
+					padding: 32px 16px;
+				}
+
 				.page-title {
-					font-size: 2.45rem;
+					font-size: 2.35rem;
+					line-height: 1.12;
+				}
+
+				.page-desc {
+					font-size: 1rem;
+					line-height: 1.7;
+				}
+
+				.page-actions {
+					gap: 8px;
+				}
+
+				.page-actions > * {
+					flex: 1 1 calc(50% - 8px);
+				}
+
+				.entry-list {
+					grid-template-columns: 1fr;
+					gap: 16px;
+				}
+
+				.entry-card,
+				.empty-state {
+					padding: 20px;
+				}
+
+				.entry-title {
+					font-size: 1.2rem;
+				}
+			}
+
+			@media (max-width: 360px) {
+				main {
+					padding-right: 14px;
+					padding-left: 14px;
+				}
+
+				.page-actions > * {
+					flex-basis: 100%;
+				}
+
+				.entry-card,
+				.empty-state {
+					padding: 16px;
 				}
 			}
 		</style>

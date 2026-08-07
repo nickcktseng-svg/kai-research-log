@@ -27,6 +27,7 @@ import { SITE_TITLE } from '../consts';
 				font-size: 3.5rem;
 				font-weight: 800;
 				letter-spacing: 0;
+				overflow-wrap: anywhere;
 			}
 
 			.page-desc {
@@ -76,6 +77,7 @@ import { SITE_TITLE } from '../consts';
 				border-radius: 8px;
 				background: #fff;
 				box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+				min-width: 0;
 			}
 
 			.panel {
@@ -197,6 +199,10 @@ import { SITE_TITLE } from '../consts';
 				font-weight: 700;
 				text-decoration: none;
 				cursor: pointer;
+				min-height: 44px;
+				max-width: 100%;
+				text-align: center;
+				overflow-wrap: anywhere;
 				transition:
 					background-color 0.2s ease,
 					border-color 0.2s ease,
@@ -264,6 +270,7 @@ import { SITE_TITLE } from '../consts';
 				background: #fcfcfc;
 				color: #222;
 				line-height: 1.85;
+				overflow-wrap: break-word;
 			}
 
 			.output-view h2,
@@ -374,6 +381,7 @@ import { SITE_TITLE } from '../consts';
 				justify-content: space-between;
 				gap: 18px;
 				margin-bottom: 16px;
+				min-width: 0;
 			}
 
 			.paper-title {
@@ -381,6 +389,7 @@ import { SITE_TITLE } from '../consts';
 				color: #111;
 				font-size: 1.35rem;
 				line-height: 1.4;
+				overflow-wrap: anywhere;
 			}
 
 			.paper-subtitle,
@@ -389,6 +398,7 @@ import { SITE_TITLE } from '../consts';
 			.empty-state {
 				color: #555;
 				line-height: 1.75;
+				overflow-wrap: break-word;
 			}
 
 			.paper-subtitle {
@@ -440,7 +450,9 @@ import { SITE_TITLE } from '../consts';
 				padding: 7px 10px;
 				font-size: 0.78rem;
 				font-weight: 700;
-				line-height: 1;
+				line-height: 1.2;
+				max-width: 100%;
+				overflow-wrap: anywhere;
 			}
 
 			.pill-dark {
@@ -513,17 +525,54 @@ import { SITE_TITLE } from '../consts';
 
 			@media (max-width: 720px) {
 				main {
-					padding: 32px 18px;
+					padding: 32px 16px;
 				}
 
 				.page-title {
-					font-size: 2.45rem;
+					font-size: 2.35rem;
+					line-height: 1.12;
+				}
+
+				.page-desc {
+					font-size: 1rem;
+					line-height: 1.7;
+				}
+
+				.section {
+					margin-bottom: 42px;
+				}
+
+				.section-title {
+					font-size: 1.35rem;
 				}
 
 				.section-heading,
 				.card-header {
 					flex-direction: column;
 					align-items: flex-start;
+					gap: 12px;
+				}
+
+				.panel-header,
+				.panel-body,
+				.paper-card {
+					padding: 18px;
+				}
+
+				.button-row,
+				.action-btns,
+				.page-actions,
+				.query-presets,
+				.platform-links {
+					gap: 8px;
+				}
+
+				.button-row > *,
+				.action-btns > *,
+				.page-actions > *,
+				.query-presets > *,
+				.platform-links > * {
+					flex: 1 1 calc(50% - 8px);
 				}
 
 				.search-box {
@@ -531,12 +580,60 @@ import { SITE_TITLE } from '../consts';
 					align-items: stretch;
 				}
 
+				.search-input {
+					min-width: 0;
+					width: 100%;
+					padding: 13px 16px;
+					border-radius: 16px;
+					font-size: 1rem;
+				}
+
 				.sort-select {
 					width: 100%;
+					min-width: 0;
+					padding: 12px 14px;
 				}
 
 				.year-select {
 					width: 100%;
+					min-width: 0;
+					padding: 12px 14px;
+				}
+
+				.search-btn {
+					width: 100%;
+				}
+
+				.output-view {
+					min-height: 320px;
+					padding: 18px;
+				}
+
+				.score-badge {
+					align-self: flex-start;
+					min-width: 0;
+				}
+			}
+
+			@media (max-width: 360px) {
+				main {
+					padding-right: 14px;
+					padding-left: 14px;
+				}
+
+				.button-row > *,
+				.action-btns > *,
+				.page-actions > *,
+				.query-presets > *,
+				.platform-links > * {
+					flex-basis: 100%;
+				}
+
+				.panel-header,
+				.panel-body,
+				.paper-card,
+				.output-view {
+					padding: 16px;
 				}
 			}
 		</style>

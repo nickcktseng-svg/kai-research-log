@@ -27,6 +27,7 @@ import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
 				font-size: 3.2rem;
 				font-weight: 800;
 				letter-spacing: 0;
+				overflow-wrap: anywhere;
 			}
 
 			.page-desc {
@@ -49,6 +50,7 @@ import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
 				border-radius: 8px;
 				background: #fff;
 				box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+				min-width: 0;
 			}
 
 			.panel-header,
@@ -186,12 +188,47 @@ import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
 			}
 
 			@media (max-width: 720px) {
+				main {
+					padding: 32px 16px;
+				}
+
 				.login-grid {
 					grid-template-columns: 1fr;
 				}
 
 				.page-title {
-					font-size: 2.4rem;
+					font-size: 2.3rem;
+					line-height: 1.12;
+				}
+
+				.page-desc {
+					font-size: 1rem;
+					line-height: 1.7;
+				}
+
+				.panel-header,
+				.panel-body {
+					padding: 18px;
+				}
+
+				.button-row > * {
+					flex: 1 1 calc(50% - 12px);
+				}
+			}
+
+			@media (max-width: 360px) {
+				main {
+					padding-right: 14px;
+					padding-left: 14px;
+				}
+
+				.panel-header,
+				.panel-body {
+					padding: 16px;
+				}
+
+				.button-row > * {
+					flex-basis: 100%;
 				}
 			}
 		</style>
