@@ -159,7 +159,7 @@ CIF 幾何檢查顯示，Br 與 Cl 結構的層面相對晶軸排列不同；而
 1. 從兩份 CIF 檔頭檢查出版欄位、資料庫編號、完整化學名稱與作者資訊，追查原始文獻。
 2. 找到兩個 Pb 材料各自的 PL 峰值；若原文未報告，明確列為需向合作老師索取的資料。
 3. 在尚未取得 PL 前，先保存 Br／Cl full model 的完整 ε₁(E) 與 ε₂(E) 頻譜，不任意指定取值能量。
-4. 依 SI 的質子轉移方式建立 Br neutralized organic／inorganic 測試模型，先完成人數、元素、總電荷與 H 位置的人工檢查。
+4. 依 SI 的質子轉移方式建立 Br neutralized organic／inorganic 測試模型，先完成原子數、元素、總電荷與 H 位置的人工檢查。
 5. 取得目標 E_PL 後，在該能量附近重新比較 K 點收斂，再正式整理 full／organic／inorganic 的張量及 dielectric contrast。
 
 目前最關鍵的前置資料仍是這兩個 Pb 材料的原始來源與 PL 峰值。找到之後，現有的 VASP 頻譜與分層模型才有一致、可重現的取值基準。
